@@ -432,9 +432,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   window.__OPENAI_KEY__ = typeof __OPENAI_API_KEY__ !== 'undefined' ? __OPENAI_API_KEY__ : '';
 </script>
 <div id="loadingOverlay">
-  <div class="loading-char">
-    <img src="" alt="">
-  </div>
+  <div class="loading-char" style="display:flex;align-items:center;justify-content:center;font-size:48px;">🎧</div>
   <div class="loading-title">KOJIRAJI ROOM</div>
   <div class="loading-wave">
     <span></span><span></span><span></span><span></span><span></span>
@@ -986,33 +984,32 @@ function showToast(msg){
   const v = document.getElementById('heroVideo');
   const overlay = document.getElementById('loadingOverlay');
 
-  function startApp() {
-    // 動画再生
-    v.muted = true;
-    v.load();
-    v.play().then(() => {
-      // 再生成功→オーバーレイをフェードアウト
-      overlay.classList.add('hidden');
-      setTimeout(() => overlay.remove(), 900);
-    }).catch(err => {
-      console.log('play error:', err);
-      overlay.classList.add('hidden');
-      setTimeout(() => overlay.remove(), 900);
-    });
+  function dismissOverlay() {
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    setTimeout(() => { if(overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 900);
   }
 
-  // オーバーレイタップで開始
-  overlay.addEventListener('click', startApp, { once: true });
+  function startApp() {
+    if (!v) { dismissOverlay(); return; }
+    v.muted = true;
+    v.play()
+      .then(() => dismissOverlay())
+      .catch(() => dismissOverlay()); // 再生失敗でもoverlay消す
+  }
 
-  // 1秒後に自動で試みる（PCブラウザ等では自動再生できる場合）
+  // タップで必ず進む
+  if (overlay) {
+    overlay.addEventListener('click', startApp, { once: true });
+  }
+
+  // 1.5秒後に自動試行（PC等）
   setTimeout(() => {
-    v.play().then(() => {
-      overlay.classList.add('hidden');
-      setTimeout(() => overlay.remove(), 900);
-    }).catch(() => {
-      // iOSはタップ待ち（何もしない）
-    });
-  }, 800);
+    if (!v || !overlay || !overlay.parentNode) return;
+    v.play()
+      .then(() => dismissOverlay())
+      .catch(() => {}); // iOSはタップ待ち
+  }, 1500);
 })();
 
 // ====== Init ======
