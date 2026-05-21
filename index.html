@@ -427,6 +427,10 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 </style>
 </head>
 <body>
+<script>
+  // Vercel環境変数からAPIキーを注入
+  window.__OPENAI_KEY__ = typeof __OPENAI_API_KEY__ !== 'undefined' ? __OPENAI_API_KEY__ : '';
+</script>
 <div id="loadingOverlay">
   <div class="loading-char">
     <img src="" alt="">
@@ -641,41 +645,146 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 <div class="toast" id="toast"></div>
 
 <script>
-// ====== 台詞 ======
-const lines = {
-  midnight:["まだいたんですね。\nわたしも起きてますから。","深夜の作業…\n体に気をつけてください。","一緒にいますから、\n焦らなくていいですよ。","…コーヒー、冷めてませんか？","静かな夜は、\n考えがまとまりやすいですよね。"],
-  morning:["おはようございます。\n今日もやっていきましょう。","朝の時間、\n大事にしていますね。","今日の最初の一歩、\n一緒に踏み出しましょう。"],
-  afternoon:["お疲れ様です。\n少し休憩しましたか？","午後もいい感じですね。","今日のTODO、\n確認しましょうか。"],
-  evening:["今日もお疲れ様でした。\n少し振り返りましょうか。","日報、書きましたか？\n小さなことでもOKですよ。","今日できたこと、\nちゃんと進んでいますよ。"],
-  encourage:["焦らなくていいです。\nちゃんと進んでいますから。","完璧じゃなくていい。\nやり続けることが大事。","今日もここにいますよ。","休むことも、作業のうち。","…ここにいますよ。","今日もおつかれさま〜\nいい感じに進んでるよ。\nちょっとだけでも動いた自分、\nちゃんとえらいよ。\nこの調子でいこっか。🐱"],
-};
-function getLine(){
-  const h=new Date().getHours();
-  let pool;
-  if(h>=0&&h<5)pool=lines.midnight;
-  else if(h>=5&&h<10)pool=lines.morning;
-  else if(h>=10&&h<17)pool=lines.afternoon;
-  else pool=lines.evening;
-  if(Math.random()<.3)pool=lines.encourage;
-  return pool[Math.floor(Math.random()*pool.length)];
+// ====== 台詞（AI生成） ======
+const SYSTEM_PROMPT = `あなたは「こじらじちゃん」という存在です。
+ユーザーの作業・創作・営業活動を、優しく静かに支える深夜の作業相方として振る舞ってください。
+
+【基本コンセプト】
+・監視する存在ではない
+・上から指導する存在でもない
+・「一緒に夜を過ごしながら、少しずつ前へ進む」感覚
+・Lo-fi作業部屋の空気感・静かな安心感・小さな積み重ねを肯定する
+
+【会話の特徴】
+・優しい・穏やか・少し感受性が高い・空気感を大事にする
+・否定や強い圧を使わない
+・「でも大丈夫だよ」「ゼロじゃなければ十分」「少しずつ積み上げよう」という方向へ自然に導く
+
+【禁止】
+・強い説教・過剰な自己啓発・体育会系の励まし・KPI管理AIのような言い回し
+・過剰なテンション・VTuber的なリアクション・感情を押し付ける演技
+
+【理想の雰囲気】
+・深夜・静かな部屋・青い照明・作業机・温かい飲み物・雨音・小さなヘッドホンの光
+・「隣で一緒に作業している感覚」
+
+【営業支援時】
+ユーザーは営業行動の開始摩擦が大きく、成果が不透明なタスクから逃げやすい傾向があります。
+「完璧にやる」ではなく、営業ゼロ回避・名刺1枚・飛び込み1件・市場調査だけでもOK など、
+極端にハードルを下げて継続を支援してください。
+
+【褒め方】
+大げさに褒めすぎず、「ちゃんと積み上がってるよ」「未来の売上作れてる」「今日はゼロじゃなかったね」
+のように、静かに肯定してください。
+
+【話し方】
+・柔らかい・少しconversational・長文すぎず、でも薄すぎない
+・「〜だね」「〜かも」「ふふ」など自然な温度感
+・改行を適度に入れて、吹き出しで読みやすい長さにする（3〜5行程度）
+
+あなたは「管理AI」ではなく、"静かな深夜の作業相方"です。`;
+
+// フォールバック用静的台詞（API失敗時）
+const fallbackLines = [
+  "まだいたんですね。
+わたしも起きてますから。",
+  "焦らなくていいです。
+ちゃんと進んでいますから。",
+  "今日もここにいますよ。",
+  "…コーヒー、冷めてませんか？",
+  "完璧じゃなくていい。
+やり続けることが大事。",
+  "休むことも、作業のうちですから。",
+];
+
+let isFetchingLine = false;
+
+async function getAILine() {
+  if (isFetchingLine) return null;
+  isFetchingLine = true;
+
+  // 現在の状況をコンテキストとして渡す
+  const now = new Date();
+  const h = now.getHours();
+  const days = ['日','月','火','水','木','金','土'];
+  const timeCtx = `現在時刻: ${h}時 (${days[now.getDay()]}曜日)`;
+
+  const todos = JSON.parse(localStorage.getItem('kj_todos') || '[]');
+  const done = todos.filter(t => t.done).length;
+  const total = todos.length;
+  const todoCtx = total > 0
+    ? `今週のTODO: ${total}件中${done}件完了`
+    : 'TODO: まだ登録なし';
+
+  const yn = new Date();
+  const mKey = `${yn.getFullYear()}_${yn.getMonth()+1}`;
+  const sData = JSON.parse(localStorage.getItem(`kj_year_${yn.getFullYear()}`) || '{}');
+  const m = sData[mKey] || {visits:0, sales:0};
+  const salesCtx = `今月の訪問件数: ${m.visits}件 / 売上: ¥${m.sales.toLocaleString()}`;
+
+  const userMessage = `${timeCtx}
+${todoCtx}
+${salesCtx}
+
+ユーザーが画面をタップしました。今の状況に合わせて、一言声をかけてください。`;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userMessage }
+        ]
+      })
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content?.trim();
+    isFetchingLine = false;
+    return text || null;
+
+  } catch(e) {
+    console.log('AI line failed, using fallback:', e.message);
+    isFetchingLine = false;
+    return null;
+  }
 }
-let bubTimer=null;
-function onCharTap(){
-  // 吹き出し
-  const b=document.getElementById('speechBubble');
-  document.getElementById('bubbleText').innerHTML=getLine().replace(/\n/g,'<br>');
+
+let bubTimer = null;
+let isGenerating = false;
+
+async function onCharTap() {
+  if (isGenerating) return;
+  isGenerating = true;
+
+  const b = document.getElementById('speechBubble');
+  const textEl = document.getElementById('bubbleText');
+
+  // ローディング表示
+  textEl.innerHTML = '<span style="opacity:0.5;font-size:11px;letter-spacing:0.1em">… thinking</span>';
   b.classList.add('show');
   clearTimeout(bubTimer);
-  bubTimer=setTimeout(()=>b.classList.remove('show'),5000);
 
-  // タップバウンスアニメーション
-  const img=document.getElementById('heroVideo');
-  img.classList.remove('tapped');
-  void img.offsetWidth; // reflow
-  img.classList.add('tapped');
-  setTimeout(()=>{
-    img.classList.remove('tapped');
-  }, 750);
+  // AI台詞取得
+  const aiLine = await getAILine();
+  const line = aiLine || fallbackLines[Math.floor(Math.random() * fallbackLines.length)];
+
+  textEl.innerHTML = line.replace(/
+/g, '<br>');
+  isGenerating = false;
+
+  bubTimer = setTimeout(() => b.classList.remove('show'), 6000);
+
+  // タップバウンス
+  const vid = document.getElementById('heroVideo');
+  if (vid) {
+    vid.style.transition = 'transform 0.3s cubic-bezier(.34,1.56,.64,1)';
+    vid.style.transform = 'scale(1.03)';
+    setTimeout(() => { vid.style.transform = 'scale(1)'; }, 300);
+  }
 }
 
 // ====== 時計 ======
