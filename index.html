@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#060a14">
+<title>こじらじちゃん</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@200;300;400&family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060a14;
+  --blue: #4a9eff;
+  --blue-dim: rgba(74,158,255,0.15);
+  --blue-mid: rgba(74,158,255,0.35);
+  --card: rgba(10,18,42,0.92);
+  --card-border: rgba(74,158,255,0.18);
+  --text: #c8d8f0;
+  --text-dim: #4a6080;
+  --text-soft: #7a9abf;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-weight:300;overflow:hidden}
+
+/* ===== MAIN LAYOUT ===== */
+.app{
+  display:flex;flex-direction:column;
+  height:100dvh;max-width:430px;margin:0 auto;
+  position:relative;overflow:hidden;
+  background:#060a14;
+}
+
+/* ===== HERO (キャラクター全画面背景) ===== */
+.hero{
+  position:relative;
+  height:56vw;max-height:360px;min-height:240px;
+  flex-shrink:0;overflow:hidden;
+  background:#060a14;
+}
+.hero-img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center center;
+  display:block;
+  filter:brightness(0.78) saturate(1.12);
+}
+/* 下グラデ（カードへの溶け込み） */
+.hero::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(
+    to bottom,
+    transparent 40%,
+    rgba(6,10,20,0.7) 75%,
+    var(--bg) 100%
+  );
+  pointer-events:none;
+  z-index: 2;
+}
+/* ヘッドホン発光オーバーレイ */
+.headphone-glow{
+  position:absolute;top:8%;right:28%;
+  z-index:3;
+  width:18%;padding-top:18%;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(74,158,255,0.55) 0%,transparent 70%);
+  animation:hpGlow 3s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes hpGlow{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
+
+/* ===== HEADER (hero上に重ねる) ===== */
+.header{
+  position:absolute;top:0;left:0;right:0;z-index:10;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:calc(var(--safe-top) + 14px) 20px 12px;
+}
+.header-left{}
+.header-title{
+  font-family:'Rajdhani',sans-serif;font-weight:500;
+  font-size:15px;letter-spacing:0.25em;color:var(--blue);
+  text-shadow:0 0 12px rgba(74,158,255,0.6);
+}
+.header-date{font-size:12px;color:var(--text-soft);margin-top:2px;letter-spacing:0.05em}
+.header-right{display:flex;gap:16px;align-items:center}
+.header-time{
+  font-family:'Rajdhani',sans-serif;font-weight:300;
+  font-size:28px;letter-spacing:0.08em;
+  color:var(--text-soft);line-height:1;margin-top:4px;
+  text-shadow:0 0 16px rgba(74,158,255,0.35);
+}
+.header-icon{
+  font-size:18px;color:var(--text-soft);cursor:pointer;
+  position:relative;
+}
+.notif-dot{
+  position:absolute;top:-2px;right:-2px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--blue);box-shadow:0 0 6px var(--blue);
+}
+
+/* ===== 吹き出し ===== */
+.speech-wrap{
+  position:absolute;bottom:14px;right:14px;z-index:20;
+  max-width:58%;
+  display:flex;flex-direction:column;align-items:flex-end;
+}
+.speech-bubble{
+  background:rgba(6,12,26,0.82);
+  border:1px solid rgba(74,158,255,0.25);
+  border-radius:14px 14px 4px 14px;
+  padding:12px 14px;
+  backdrop-filter:blur(12px);
+  box-shadow:0 0 24px rgba(74,158,255,0.12);
+  opacity:0;transform:translateY(6px);
+  transition:all .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.speech-bubble.show{opacity:1;transform:translateY(0)}
+.speech-text{font-size:12px;line-height:1.85;color:var(--text-soft);text-align:right}
+.tap-hint{
+  margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:flex-end;
+  font-size:10px;letter-spacing:.15em;color:var(--text-dim);
+}
+.tap-hint-wave{display:flex;gap:2px;align-items:center}
+.tap-hint-wave span{
+  display:inline-block;width:2px;border-radius:1px;
+  background:var(--blue);opacity:.5;
+  animation:wave .8s ease-in-out infinite;
+}
+.tap-hint-wave span:nth-child(1){height:6px;animation-delay:0s}
+.tap-hint-wave span:nth-child(2){height:10px;animation-delay:.1s}
+.tap-hint-wave span:nth-child(3){height:14px;animation-delay:.2s}
+.tap-hint-wave span:nth-child(4){height:10px;animation-delay:.3s}
+.tap-hint-wave span:nth-child(5){height:6px;animation-delay:.4s}
+@keyframes wave{0%,100%{opacity:.3;transform:scaleY(.6)}50%{opacity:.8;transform:scaleY(1)}}
+
+/* ===== QUICK BUTTONS ===== */
+.quick-btns{
+  display:flex;gap:8px;
+  padding:8px 16px;
+  margin-top:0;
+  position:relative;z-index:5;
+  flex-shrink:0;
+  background:#060a14;
+}
+.qbtn{
+  flex:1;
+  background:rgba(8,16,36,0.8);
+  border:1px solid rgba(74,158,255,0.15);
+  border-radius:14px;
+  padding:10px 4px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;
+  backdrop-filter:blur(4px);
+  transition:all .2s;
+  font-family:inherit;
+}
+.qbtn:active{background:rgba(74,158,255,0.12);border-color:rgba(74,158,255,0.35)}
+.qbtn-icon{font-size:20px;line-height:1}
+.qbtn-label{font-size:9px;letter-spacing:.04em;color:var(--text-soft);white-space:nowrap}
+
+/* ===== SCROLL CONTENT ===== */
+.scroll-area{
+  flex:1;overflow-y:auto;
+  padding:10px 14px calc(70px + var(--safe-bot));
+  display:flex;flex-direction:column;gap:8px;
+  background:#060a14;
+}
+.scroll-area::-webkit-scrollbar{display:none}
+
+/* ===== SUMMARY CARDS ===== */
+.scard{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:16px;
+  padding:14px 16px;
+  display:flex;align-items:center;gap:14px;
+  backdrop-filter:blur(4px);
+  cursor:pointer;
+  transition:border-color .2s;
+  position:relative;overflow:hidden;
+}
+.scard:active{border-color:rgba(74,158,255,0.35)}
+.scard-icon-wrap{
+  width:44px;height:44px;min-width:44px;
+  background:rgba(74,158,255,0.08);
+  border:1px solid rgba(74,158,255,0.18);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+}
+.scard-body{flex:1;min-width:0}
+.scard-label{font-size:10px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:4px}
+.scard-value{font-size:24px;font-weight:200;color:var(--text);line-height:1}
+.scard-unit{font-size:11px;color:var(--text-dim);margin-left:3px}
+.scard-sub{font-size:10px;color:var(--text-dim);margin-top:2px}
+.scard-arrow{font-size:16px;color:var(--text-dim);margin-left:4px}
+/* ミニグラフ */
+.mini-graph{
+  position:absolute;right:40px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:flex-end;gap:3px;height:36px;
+  opacity:.5;
+}
+.mg-bar{width:4px;border-radius:2px 2px 0 0;background:var(--blue);min-height:3px}
+.mg-line{
+  width:60px;height:36px;position:absolute;right:40px;top:50%;transform:translateY(-50%);
+  opacity:.4;
+}
+/* プログレスリング */
+.prog-ring-wrap{
+  position:relative;width:48px;height:48px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.prog-ring{transform:rotate(-90deg)}
+.prog-ring-bg{fill:none;stroke:rgba(74,158,255,.1);stroke-width:3}
+.prog-ring-fill{fill:none;stroke:var(--blue);stroke-width:3;stroke-linecap:round;
+  transition:stroke-dashoffset .6s ease;}
+.prog-pct{font-size:11px;color:var(--text-soft);font-weight:300}
+
+/* ===== PANELS ===== */
+.panel{display:none;flex-direction:column;gap:8px}
+.panel.active{display:flex}
+
+/* ===== TODO ===== */
+.todo-input-row{display:flex;gap:8px}
+.todo-input{
+  flex:1;background:rgba(74,158,255,.04);
+  border:1px solid rgba(74,158,255,.15);border-radius:10px;
+  padding:10px 12px;color:var(--text);font-family:inherit;
+  font-size:13px;font-weight:300;outline:none;
+}
+.todo-input:focus{border-color:rgba(74,158,255,.4)}
+.todo-input::placeholder{color:var(--text-dim)}
+.btn-add{
+  background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.25);
+  border-radius:10px;padding:10px 16px;
+  color:var(--blue);font-size:20px;cursor:pointer;
+  font-family:inherit;transition:all .15s;
+}
+.btn-add:active{background:rgba(74,158,255,.25)}
+.todo-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.todo-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:rgba(74,158,255,.03);
+  border:1px solid rgba(74,158,255,.07);border-radius:10px;
+  animation:slideIn .25s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}}
+.todo-check{
+  width:18px;height:18px;min-width:18px;
+  border:1px solid rgba(74,158,255,.3);border-radius:50%;
+  background:none;cursor:pointer;position:relative;transition:all .2s;
+}
+.todo-item.done .todo-check{background:rgba(74,158,255,.2);border-color:var(--blue)}
+.todo-item.done .todo-check::after{
+  content:'✓';position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--blue);
+}
+.todo-text{flex:1;font-size:13px;color:var(--text);transition:all .2s}
+.todo-item.done .todo-text{color:var(--text-dim);text-decoration:line-through;text-decoration-color:var(--text-dim)}
+.todo-del{background:none;border:none;color:var(--text-dim);font-size:14px;cursor:pointer;padding:2px 4px;opacity:.5}
+
+/* ===== 日報 ===== */
+.report-textarea{
+  width:100%;background:rgba(74,158,255,.04);
+  border:1px solid rgba(74,158,255,.15);border-radius:10px;
+  padding:12px;color:var(--text);font-family:inherit;
+  font-size:13px;font-weight:300;line-height:1.7;
+  resize:none;outline:none;min-height:130px;
+}
+.report-textarea:focus{border-color:rgba(74,158,255,.3)}
+.report-textarea::placeholder{color:var(--text-dim)}
+.btn-save{
+  width:100%;margin-top:8px;
+  background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.2);
+  border-radius:10px;padding:12px;
+  color:var(--text-soft);font-family:inherit;font-size:12px;
+  letter-spacing:.1em;cursor:pointer;transition:all .2s;
+}
+.btn-save:active{background:rgba(74,158,255,.18)}
+.history-list{display:flex;flex-direction:column;gap:4px}
+.history-item{
+  display:flex;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid rgba(74,158,255,.06);
+  font-size:12px;cursor:pointer;
+}
+.history-date{color:var(--text-dim)}
+.history-val{color:var(--text-soft)}
+
+/* ===== 実績 ===== */
+.metric-input-row{display:flex;gap:8px;margin-top:10px}
+.metric-input{
+  flex:1;background:rgba(74,158,255,.04);
+  border:1px solid rgba(74,158,255,.12);border-radius:8px;
+  padding:9px 10px;color:var(--text);font-family:inherit;
+  font-size:13px;font-weight:300;outline:none;
+}
+.metric-input::placeholder{color:var(--text-dim);font-size:11px}
+.btn-sm{
+  background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.2);
+  border-radius:8px;padding:9px 14px;color:var(--text-soft);
+  font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit;
+}
+.btn-sm:active{background:rgba(74,158,255,.22)}
+.big-val{font-size:32px;font-weight:200;color:var(--text);line-height:1;margin:6px 0 2px}
+.big-unit{font-size:12px;color:var(--text-dim);margin-left:2px}
+.yearly-sub{font-size:10px;color:var(--text-dim);letter-spacing:.1em}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;
+  background:rgba(4,8,18,0.97);
+  border-top:1px solid rgba(74,158,255,.1);
+  backdrop-filter:blur(20px);
+  display:flex;z-index:100;
+  padding-bottom:var(--safe-bot);
+}
+.bnav-btn{
+  flex:1;padding:12px 8px 10px;
+  background:none;border:none;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--text-dim);cursor:pointer;font-family:inherit;transition:color .2s;
+}
+.bnav-btn.active{color:var(--blue)}
+.bnav-btn.active .bnav-icon{filter:drop-shadow(0 0 6px rgba(74,158,255,.5))}
+.bnav-icon{font-size:20px;line-height:1}
+.bnav-label{font-size:9px;letter-spacing:.06em}
+
+/* ===== CARD LABEL ===== */
+.clabel{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(74,158,255,.6);margin-bottom:10px}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  background:rgba(8,16,36,.95);border:1px solid rgba(74,158,255,.3);
+  border-radius:12px;padding:9px 16px;
+  color:var(--text-soft);font-size:12px;
+  backdrop-filter:blur(10px);z-index:200;
+  opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;
+}
+.toast.show{opacity:1}
+
+/* ===== SVG LINE CHART ===== */
+.line-chart-wrap{width:80px;height:36px;position:absolute;right:36px;top:50%;transform:translateY(-50%);opacity:.5}
+
+/* ===== キャラクターアニメーション ===== */
+
+/* 呼吸（拡縮のみ・上下移動なし） */
+@keyframes breathe {
+  0%,100% { transform: scale(1.000); }
+  40%      { transform: scale(1.005); }
+  70%      { transform: scale(1.002); }
+}
+
+/* 髪の揺れ（左右にゆらゆら・上下移動なし） */
+@keyframes hairSway {
+  0%,100% { transform: scale(1.000) rotate(0deg);   }
+  25%      { transform: scale(1.003) rotate(0.4deg);  }
+  75%      { transform: scale(1.002) rotate(-0.3deg); }
+}
+
+
+#heroVideo {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  filter: brightness(0.82) saturate(1.1);
+  z-index: 1;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HERO -->
+  <div class="hero" id="heroArea" onclick="onCharTap()">
+    <video id="heroVideo" autoplay loop muted playsinline>
+      <source src="kojiraji_anim.webm" type="video/webm">
+      <source src="kojiraji_anim.mp4" type="video/mp4">
+    </video>
+    <div class="headphone-glow"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="header-title">KOJIRAJI ROOM</div>
+        <div class="header-date" id="dateDisplay">—</div>
+        <div class="header-time" id="timeDisplay">—</div>
+      </div>
+      <div class="header-right">
+        <div class="header-icon">🔔<div class="notif-dot"></div></div>
+        <div class="header-icon" onclick="event.stopPropagation()">☰</div>
+      </div>
+    </div>
+
+    <!-- 吹き出し -->
+    <div class="speech-wrap">
+      <div class="speech-bubble" id="speechBubble">
+        <p class="speech-text" id="bubbleText">…</p>
+      </div>
+      <div class="tap-hint">
+        <div class="tap-hint-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        tap to talk
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK BUTTONS -->
+  <div class="quick-btns">
+    <button class="qbtn" onclick="switchMain('todo')">
+      <span class="qbtn-icon">📋</span>
+      <span class="qbtn-label">週間TODO</span>
+    </button>
+    <button class="qbtn" onclick="switchMain('report')">
+      <span class="qbtn-icon">📝</span>
+      <span class="qbtn-label">簡易日報</span>
+    </button>
+    <button class="qbtn" onclick="switchMain('sales');showSalesSection('visits')">
+      <span class="qbtn-icon">🏢</span>
+      <span class="qbtn-label">月間訪問件数</span>
+    </button>
+    <button class="qbtn" onclick="switchMain('sales');showSalesSection('monthly')">
+      <span class="qbtn-icon">📈</span>
+      <span class="qbtn-label">月間売上</span>
+    </button>
+    <button class="qbtn" onclick="switchMain('sales');showSalesSection('yearly')">
+      <span class="qbtn-icon">👑</span>
+      <span class="qbtn-label">年間売上</span>
+    </button>
+  </div>
+
+  <!-- SCROLL CONTENT -->
+  <div class="scroll-area">
+
+    <!-- HOME PANEL -->
+    <div class="panel active" id="panel-home">
+
+      <!-- 今週のサマリー -->
+      <div class="scard" onclick="switchMain('todo')">
+        <div class="prog-ring-wrap">
+          <svg class="prog-ring" width="48" height="48" viewBox="0 0 48 48">
+            <circle class="prog-ring-bg" cx="24" cy="24" r="20"/>
+            <circle class="prog-ring-fill" id="progRingFill" cx="24" cy="24" r="20"
+              stroke-dasharray="125.6" stroke-dashoffset="125.6"/>
+          </svg>
+          <span class="prog-pct" id="progPct" style="position:absolute">0%</span>
+        </div>
+        <div class="scard-body">
+          <div class="scard-label">今週のサマリー</div>
+          <div>
+            <span style="font-size:11px;color:var(--text-dim)">TODO完了</span>
+          </div>
+          <div style="font-size:26px;font-weight:200;color:var(--text);line-height:1.1">
+            <span id="homeCompleted">0</span>
+            <span style="font-size:12px;color:var(--text-dim)"> / <span id="homeTotal">0</span>件</span>
+          </div>
+        </div>
+        <!-- カレンダーアイコン風 -->
+        <div style="font-size:28px;opacity:.25;margin-left:4px">🗓</div>
+        <div class="scard-arrow">›</div>
+      </div>
+
+      <!-- 今月の訪問件数 -->
+      <div class="scard" onclick="switchMain('sales');showSalesSection('visits')">
+        <div class="scard-icon-wrap">🏢</div>
+        <div class="scard-body">
+          <div class="scard-label">今月の訪問件数</div>
+          <div><span class="scard-value" id="homeVisits">0</span><span class="scard-unit">件</span></div>
+        </div>
+        <div class="mini-graph" id="miniVisitsGraph"></div>
+        <div class="scard-arrow">›</div>
+      </div>
+
+      <!-- 今月の売上 -->
+      <div class="scard" onclick="switchMain('sales');showSalesSection('monthly')">
+        <div class="scard-icon-wrap">¥</div>
+        <div class="scard-body">
+          <div class="scard-label">今月の売上</div>
+          <div><span style="font-size:14px;color:var(--text-dim)">¥</span><span class="scard-value" id="homeMonthlySales">0</span></div>
+        </div>
+        <svg class="line-chart-wrap" id="monthlyLineChart" viewBox="0 0 80 36" preserveAspectRatio="none"></svg>
+        <div class="scard-arrow">›</div>
+      </div>
+
+      <!-- 今年の売上 -->
+      <div class="scard" onclick="switchMain('sales');showSalesSection('yearly')">
+        <div class="scard-icon-wrap">👑</div>
+        <div class="scard-body">
+          <div class="scard-label">今年の売上</div>
+          <div><span style="font-size:14px;color:var(--text-dim)">¥</span><span class="scard-value" id="homeYearlySales">0</span></div>
+        </div>
+        <svg class="line-chart-wrap" id="yearlyLineChart" viewBox="0 0 80 36" preserveAspectRatio="none"></svg>
+        <div class="scard-arrow">›</div>
+      </div>
+
+    </div><!-- /panel-home -->
+
+    <!-- TODO PANEL -->
+    <div class="panel" id="panel-todo">
+      <div class="scard" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clabel">週間TODO</div>
+        <div class="todo-input-row">
+          <input class="todo-input" id="todoInput" placeholder="タスクを追加...">
+          <button class="btn-add" onclick="addTodo()">＋</button>
+        </div>
+        <div class="todo-list" id="todoList"></div>
+      </div>
+    </div>
+
+    <!-- 日報 PANEL -->
+    <div class="panel" id="panel-report">
+      <div class="scard" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clabel">今日の日報 — <span id="reportDateLabel">—</span></div>
+        <textarea class="report-textarea" id="reportText" placeholder="今日やったこと、気づき、明日のこと…"></textarea>
+        <button class="btn-save" onclick="saveReport()">保 存</button>
+      </div>
+      <div class="scard" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clabel">過去の日報</div>
+        <div class="history-list" id="reportHistory"></div>
+      </div>
+    </div>
+
+    <!-- 実績 PANEL -->
+    <div class="panel" id="panel-sales">
+      <!-- 訪問件数 -->
+      <div class="scard" id="sales-visits" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clabel">月間 訪問件数</div>
+        <div class="big-val"><span id="visitsVal">0</span><span class="big-unit">件</span></div>
+        <div class="metric-input-row">
+          <input class="metric-input" id="visitsInput" type="number" placeholder="件数を追加">
+          <button class="btn-sm" onclick="addVisits()">追加</button>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:44px;margin-top:10px" id="visitsBarChart"></div>
+      </div>
+      <!-- 月間売上 -->
+      <div class="scard" id="sales-monthly" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clabel">月間 売上</div>
+        <div class="big-val">¥<span id="monthlySalesVal">0</span></div>
+        <div class="metric-input-row">
+          <input class="metric-input" id="monthlySalesInput" type="number" placeholder="金額を入力 (円)">
+          <button class="btn-sm" onclick="addMonthlySales()">追加</button>
+        </div>
+      </div>
+      <!-- 年間売上 -->
+      <div class="scard" id="sales-yearly" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clabel">年間 売上</div>
+        <div class="big-val">¥<span id="yearlySalesVal">0</span></div>
+        <div class="yearly-sub" id="yearlySubLabel">—年 累計</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:44px;margin-top:10px" id="yearlyBarChart"></div>
+      </div>
+    </div>
+
+  </div><!-- /scroll-area -->
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="bnav-btn active" id="bn-home" onclick="switchMain('home')">
+    <span class="bnav-icon">🏠</span><span class="bnav-label">HOME</span>
+  </button>
+  <button class="bnav-btn" id="bn-todo" onclick="switchMain('todo')">
+    <span class="bnav-icon">📋</span><span class="bnav-label">TODO</span>
+  </button>
+  <button class="bnav-btn" id="bn-report" onclick="switchMain('report')">
+    <span class="bnav-icon">✏️</span><span class="bnav-label">日報</span>
+  </button>
+  <button class="bnav-btn" id="bn-sales" onclick="switchMain('sales')">
+    <span class="bnav-icon">📊</span><span class="bnav-label">実績</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 台詞 ======
+const lines = {
+  midnight:["まだいたんですね。\nわたしも起きてますから。","深夜の作業…\n体に気をつけてください。","一緒にいますから、\n焦らなくていいですよ。","…コーヒー、冷めてませんか？","静かな夜は、\n考えがまとまりやすいですよね。"],
+  morning:["おはようございます。\n今日もやっていきましょう。","朝の時間、\n大事にしていますね。","今日の最初の一歩、\n一緒に踏み出しましょう。"],
+  afternoon:["お疲れ様です。\n少し休憩しましたか？","午後もいい感じですね。","今日のTODO、\n確認しましょうか。"],
+  evening:["今日もお疲れ様でした。\n少し振り返りましょうか。","日報、書きましたか？\n小さなことでもOKですよ。","今日できたこと、\nちゃんと進んでいますよ。"],
+  encourage:["焦らなくていいです。\nちゃんと進んでいますから。","完璧じゃなくていい。\nやり続けることが大事。","今日もここにいますよ。","休むことも、作業のうち。","…ここにいますよ。","今日もおつかれさま〜\nいい感じに進んでるよ。\nちょっとだけでも動いた自分、\nちゃんとえらいよ。\nこの調子でいこっか。🐱"],
+};
+function getLine(){
+  const h=new Date().getHours();
+  let pool;
+  if(h>=0&&h<5)pool=lines.midnight;
+  else if(h>=5&&h<10)pool=lines.morning;
+  else if(h>=10&&h<17)pool=lines.afternoon;
+  else pool=lines.evening;
+  if(Math.random()<.3)pool=lines.encourage;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+let bubTimer=null;
+function onCharTap(){
+  // 吹き出し
+  const b=document.getElementById('speechBubble');
+  document.getElementById('bubbleText').innerHTML=getLine().replace(/\n/g,'<br>');
+  b.classList.add('show');
+  clearTimeout(bubTimer);
+  bubTimer=setTimeout(()=>b.classList.remove('show'),5000);
+
+  // タップバウンスアニメーション
+  const img=document.getElementById('heroVideo');
+  img.classList.remove('tapped');
+  void img.offsetWidth; // reflow
+  img.classList.add('tapped');
+  setTimeout(()=>{
+    img.classList.remove('tapped');
+  }, 750);
+}
+
+// ====== 時計 ======
+function tick(){
+  const n=new Date();
+  const days=['日','月','火','水','木','金','土'];
+  document.getElementById('dateDisplay').textContent=
+    `${n.getMonth()+1}/${n.getDate()}（${days[n.getDay()]}）`;
+  const h=String(n.getHours()).padStart(2,'0');
+  const m=String(n.getMinutes()).padStart(2,'0');
+  const s=String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('timeDisplay').textContent=`${h}:${m}:${s}`;
+  const d=n.toISOString().slice(0,10);
+  document.getElementById('reportDateLabel').textContent=d;
+}
+setInterval(tick,1000);tick();
+
+// ====== タブ ======
+function switchMain(name){
+  ['home','todo','report','sales'].forEach(n=>{
+    document.getElementById('panel-'+n).classList.toggle('active',n===name);
+    document.getElementById('bn-'+n).classList.toggle('active',n===name);
+  });
+  if(name==='home')updateHomeCards();
+}
+function showSalesSection(sec){
+  document.getElementById('sales-'+sec).scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ====== TODO ======
+let todos=JSON.parse(localStorage.getItem('kj_todos')||'[]');
+function saveTodos(){localStorage.setItem('kj_todos',JSON.stringify(todos));}
+function renderTodos(){
+  const l=document.getElementById('todoList');l.innerHTML='';
+  const done=todos.filter(t=>t.done).length,total=todos.length;
+  todos.forEach((t,i)=>{
+    const el=document.createElement('div');
+    el.className='todo-item'+(t.done?' done':'');
+    el.innerHTML=`<button class="todo-check" onclick="toggleTodo(${i})"></button>
+      <span class="todo-text">${t.text}</span>
+      <button class="todo-del" onclick="delTodo(${i})">×</button>`;
+    l.appendChild(el);
+  });
+  updateHomeCards();
+}
+function addTodo(){
+  const inp=document.getElementById('todoInput');
+  const t=inp.value.trim();if(!t)return;
+  todos.push({text:t,done:false});saveTodos();renderTodos();inp.value='';
+  showToast('タスクを追加しました');
+}
+function toggleTodo(i){todos[i].done=!todos[i].done;saveTodos();renderTodos();}
+function delTodo(i){todos.splice(i,1);saveTodos();renderTodos();}
+document.getElementById('todoInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo();});
+
+// ====== 日報 ======
+let reports=JSON.parse(localStorage.getItem('kj_reports')||'[]');
+function saveReport(){
+  const txt=document.getElementById('reportText').value.trim();if(!txt)return;
+  const today=new Date().toISOString().slice(0,10);
+  const idx=reports.findIndex(r=>r.date===today);
+  if(idx>=0)reports[idx].text=txt;else reports.unshift({date:today,text:txt});
+  if(reports.length>30)reports=reports.slice(0,30);
+  localStorage.setItem('kj_reports',JSON.stringify(reports));
+  renderReports();showToast('日報を保存しました');
+}
+function renderReports(){
+  const l=document.getElementById('reportHistory');l.innerHTML='';
+  reports.slice(0,7).forEach(r=>{
+    const el=document.createElement('div');el.className='history-item';
+    el.innerHTML=`<span class="history-date">${r.date}</span><span class="history-val">${r.text.slice(0,16)}…</span>`;
+    el.onclick=()=>document.getElementById('reportText').value=r.text;
+    l.appendChild(el);
+  });
+}
+
+// ====== 売上 ======
+const yn=new Date(),yearKey=`kj_year_${yn.getFullYear()}`,mKey=`${yn.getFullYear()}_${yn.getMonth()+1}`;
+let sData=JSON.parse(localStorage.getItem(yearKey)||'{}');
+function getM(){return sData[mKey]||(sData[mKey]={visits:0,sales:0});}
+function saveSData(){localStorage.setItem(yearKey,JSON.stringify(sData));}
+function addVisits(){
+  const v=parseInt(document.getElementById('visitsInput').value)||0;if(v<=0)return;
+  getM().visits+=v;saveSData();renderSales();
+  document.getElementById('visitsInput').value='';showToast(`${v}件 追加`);
+}
+function addMonthlySales(){
+  const v=parseInt(document.getElementById('monthlySalesInput').value)||0;if(v<=0)return;
+  getM().sales+=v;saveSData();renderSales();
+  document.getElementById('monthlySalesInput').value='';showToast(`¥${v.toLocaleString()} 追加`);
+}
+function renderSales(){
+  const m=getM();
+  document.getElementById('visitsVal').textContent=m.visits.toLocaleString();
+  document.getElementById('monthlySalesVal').textContent=m.sales.toLocaleString();
+  let yearly=0;Object.values(sData).forEach(v=>yearly+=(v.sales||0));
+  document.getElementById('yearlySalesVal').textContent=yearly.toLocaleString();
+  document.getElementById('yearlySubLabel').textContent=`${yn.getFullYear()}年 累計`;
+  renderBarChart('visitsBarChart','visits');
+  renderBarChart('yearlyBarChart','sales');
+  updateHomeCards();
+}
+
+function renderBarChart(id,field){
+  const el=document.getElementById(id);el.innerHTML='';
+  const months=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(yn.getFullYear(),yn.getMonth()-i,1);
+    months.push(`${d.getFullYear()}_${d.getMonth()+1}`);
+  }
+  const vals=months.map(k=>sData[k]?.[field]||0);
+  const max=Math.max(...vals,1);
+  months.forEach((k,i)=>{
+    const bar=document.createElement('div');
+    bar.style.cssText=`flex:1;border-radius:3px 3px 0 0;min-height:3px;
+      height:${Math.max(vals[i]/max*44,3)}px;
+      background:${k===mKey?'rgba(74,158,255,.6)':'rgba(74,158,255,.2)'};
+      ${k===mKey?'box-shadow:0 0 6px rgba(74,158,255,.4)':''}`;
+    el.appendChild(bar);
+  });
+}
+
+function updateHomeCards(){
+  const done=todos.filter(t=>t.done).length,total=todos.length;
+  document.getElementById('homeCompleted').textContent=done;
+  document.getElementById('homeTotal').textContent=total;
+  const pct=total?(done/total*100):0;
+  document.getElementById('progPct').textContent=Math.round(pct)+'%';
+  const circ=125.6,offset=circ-(pct/100*circ);
+  document.getElementById('progRingFill').style.strokeDashoffset=offset;
+
+  const m=getM();
+  document.getElementById('homeVisits').textContent=m.visits.toLocaleString();
+  document.getElementById('homeMonthlySales').textContent=m.sales.toLocaleString();
+  let yearly=0;Object.values(sData).forEach(v=>yearly+=(v.sales||0));
+  document.getElementById('homeYearlySales').textContent=yearly.toLocaleString();
+
+  // ミニ棒グラフ（訪問件数）
+  const mg=document.getElementById('miniVisitsGraph');mg.innerHTML='';
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(yn.getFullYear(),yn.getMonth()-i,1);
+    months.push(`${d.getFullYear()}_${d.getMonth()+1}`);
+  }
+  const vals=months.map(k=>sData[k]?.visits||0);
+  const maxV=Math.max(...vals,1);
+  months.forEach((k,i)=>{
+    const b=document.createElement('div');b.className='mg-bar';
+    b.style.height=Math.max(vals[i]/maxV*36,3)+'px';
+    if(k===mKey){b.style.background='rgba(74,158,255,.6)';b.style.boxShadow='0 0 5px rgba(74,158,255,.4)';}
+    mg.appendChild(b);
+  });
+
+  // ラインチャート（売上）
+  drawLineChart('monthlyLineChart','sales',6);
+  drawLineChart('yearlyLineChart','sales',12);
+}
+
+function drawLineChart(id,field,count){
+  const svg=document.getElementById(id);if(!svg)return;
+  svg.innerHTML='';
+  const months=[];
+  for(let i=count-1;i>=0;i--){
+    const d=new Date(yn.getFullYear(),yn.getMonth()-i,1);
+    months.push(`${d.getFullYear()}_${d.getMonth()+1}`);
+  }
+  const vals=months.map(k=>sData[k]?.[field]||0);
+  const max=Math.max(...vals,1);
+  const pts=vals.map((v,i)=>`${i/(count-1)*80},${36-v/max*32}`).join(' ');
+  if(vals.some(v=>v>0)){
+    const poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    poly.setAttribute('points',pts);
+    poly.setAttribute('fill','none');
+    poly.setAttribute('stroke','rgba(74,158,255,.7)');
+    poly.setAttribute('stroke-width','1.5');
+    poly.setAttribute('stroke-linecap','round');
+    poly.setAttribute('stroke-linejoin','round');
+    svg.appendChild(poly);
+    vals.forEach((v,i)=>{
+      if(v===0)return;
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',i/(count-1)*80);c.setAttribute('cy',36-v/max*32);
+      c.setAttribute('r','2');c.setAttribute('fill','rgba(74,158,255,.9)');
+      svg.appendChild(c);
+    });
+  }
+}
+
+// ====== Toast ======
+let tTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(tTimer);tTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+
+// ====== 動画セットアップ ======
+(function(){
+  const v = document.getElementById('heroVideo');
+  v.load();
+  const tryPlay = () => v.play().catch(()=>{});
+  tryPlay();
+  // タップでも再生開始（自動再生ブロック対策）
+  document.getElementById('heroArea').addEventListener('click', tryPlay, {once:true});
+})();
+
+// ====== Init ======
+renderTodos();renderReports();renderSales();
+setTimeout(()=>{
+  const h=new Date().getHours();
+  if(h>=20||h<6)onCharTap();
+},1200);
+</script>
+</body>
+</html>
