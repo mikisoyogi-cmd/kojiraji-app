@@ -39,8 +39,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 @keyframes ldWave{0%,100%{transform:scaleY(.5);opacity:.3}50%{transform:scaleY(1);opacity:1}}
 
 /* HERO */
-.hero{position:relative;height:56vw;max-height:360px;min-height:240px;flex-shrink:0;overflow:hidden;background:#060a14;cursor:pointer;transition:height .3s ease,max-height .3s ease}
-.hero.expanded{height:72vw;max-height:440px}
+.hero{position:relative;height:48vh;max-height:480px;min-height:280px;flex-shrink:0;overflow:hidden;background:#060a14;cursor:pointer;transition:height .3s ease}
+.hero.expanded{height:52vh;max-height:520px}
 .hero-bg{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;filter:brightness(.78) saturate(1.12);position:absolute;top:0;left:0;z-index:0}
 #heroVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.82) saturate(1.1);z-index:1}
 .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(6,10,20,.7) 75%,#060a14 100%);pointer-events:none;z-index:2}
@@ -57,8 +57,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .ndot{position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px var(--blue)}
 
 /* 吹き出し */
-.sw{position:absolute;bottom:0;left:0;right:0;z-index:20;display:flex;flex-direction:column;align-items:flex-start;background:linear-gradient(to top,rgba(6,10,20,.95) 0%,rgba(6,10,20,.7) 80%,transparent 100%);padding:12px 16px 14px}
-.sb{background:rgba(6,12,26,.75);border:1px solid rgba(74,158,255,.2);border-radius:12px;padding:10px 12px;backdrop-filter:blur(8px);opacity:0;transform:translateY(4px);transition:all .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none;width:100%}
+.sw-area{flex-shrink:0;background:#060a14;padding:10px 16px 6px;display:flex;flex-direction:column;gap:0;border-bottom:1px solid rgba(74,158,255,.06)}
+.sb{background:rgba(10,18,42,.9);border:1px solid rgba(74,158,255,.18);border-radius:12px;padding:12px 14px;opacity:0;transform:translateY(4px);transition:all .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .sb.show{opacity:1;transform:translateY(0)}
 .st{font-size:12px;line-height:1.85;color:var(--soft);text-align:left}
 .th{margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:flex-start;font-size:10px;letter-spacing:.15em;color:var(--dim)}
@@ -181,14 +181,16 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
       </div>
       <div class="hdr-right"><div class="hdr-icon">🔔<div class="ndot"></div></div></div>
     </div>
-    <div class="sw">
-      <div class="sb" id="sb"><p class="st" id="st"></p></div>
-      <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
-        <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
-        <button class="ci-btn" onclick="sendMsg()">→</button>
-      </div>
-      <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
+  </div><!-- /hero -->
+
+  <!-- セリフエリア（独立） -->
+  <div class="sw-area" id="swArea">
+    <div class="sb" id="sb"><p class="st" id="st"></p></div>
+    <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
+      <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
+      <button class="ci-btn" onclick="sendMsg()">→</button>
     </div>
+    <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
   </div>
 
   <div class="qrow">
@@ -431,10 +433,8 @@ function onTap() {
 
   var sb = document.getElementById("sb");
   var st = document.getElementById("st");
-  var hero = document.getElementById("heroArea");
   st.innerHTML = "<span style=\"opacity:.5;font-size:11px\">… thinking</span>";
   sb.classList.add("show");
-  hero.classList.add("expanded");
   clearTimeout(bTimer);
 
   askAI(getCtx(), function(line) {
