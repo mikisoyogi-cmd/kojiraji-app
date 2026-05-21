@@ -137,6 +137,14 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .bb{flex:1;border-radius:3px 3px 0 0;min-height:3px;background:rgba(74,158,255,.2)}
 .bb.cur{background:rgba(74,158,255,.6);box-shadow:0 0 6px rgba(74,158,255,.4)}
 
+
+/* 会話入力 */
+.ci-row{display:flex;gap:6px;margin-top:8px;align-items:center}
+.ci-input{flex:1;background:rgba(6,12,26,.85);border:1px solid rgba(74,158,255,.25);border-radius:20px;padding:8px 14px;color:var(--text);font-family:inherit;font-size:12px;font-weight:300;outline:none;backdrop-filter:blur(8px)}
+.ci-input:focus{border-color:rgba(74,158,255,.5)}
+.ci-input::placeholder{color:var(--dim)}
+.ci-btn{background:rgba(74,158,255,.15);border:1px solid rgba(74,158,255,.3);border-radius:50%;width:32px;height:32px;min-width:32px;color:var(--blue);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.ci-btn:active{background:rgba(74,158,255,.35)}
 /* NAV */
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(4,8,18,.97);border-top:1px solid rgba(74,158,255,.1);display:flex;z-index:100;padding-bottom:var(--safe-bot)}
 .nb{flex:1;padding:12px 8px 10px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dim);cursor:pointer;font-family:inherit;transition:color .2s}
@@ -174,6 +182,10 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     </div>
     <div class="sw">
       <div class="sb" id="sb"><p class="st" id="st"></p></div>
+      <div class="ci-row" id="ciRow" style="display:none">
+        <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100">
+        <button class="ci-btn" onclick="sendMsg()">→</button>
+      </div>
       <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
     </div>
   </div>
@@ -257,6 +269,37 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 <div class="toast" id="toast"></div>
 
 <script>
+
+// ====== 会話履歴 ======
+var chatHistory = [];
+var chatDate = new Date().toISOString().slice(0,10);
+
+function checkDateReset() {
+  var today = new Date().toISOString().slice(0,10);
+  if (today !== chatDate) {
+    chatHistory = [];
+    chatDate = today;
+  }
+}
+
+function addHistory(role, content) {
+  chatHistory.push({role: role, content: content});
+  // 最新5往復（10件）まで保持
+  if (chatHistory.length > 10) {
+    chatHistory = chatHistory.slice(chatHistory.length - 10);
+  }
+}
+
+function buildMessages(userMsg) {
+  checkDateReset();
+  var msgs = [{role: "system", content: SP}];
+  // 過去の会話履歴
+  chatHistory.forEach(function(m){ msgs.push(m); });
+  // 今回のメッセージ
+  msgs.push({role: "user", content: userMsg});
+  return msgs;
+}
+
 var SP = "あなたは「こじらじちゃん」という存在です。ユーザーの作業・創作・営業活動を、優しく静かに支える深夜の作業相方として振る舞ってください。\n\n基本コンセプト: 監視する存在ではない。上から指導する存在でもない。一緒に夜を過ごしながら、少しずつ前へ進む感覚。Lo-fi作業部屋の空気感、静かな安心感、小さな積み重ねを肯定する。\n\n禁止: 強い説教、過剰な自己啓発、体育会系の励まし、KPI管理AIのような言い回し、過剰なテンション、感情を押し付ける演技。\n\n営業支援: ユーザーは営業行動の開始摩擦が大きく逃げやすい傾向があります。完璧にやるではなく、営業ゼロ回避、名刺1枚、飛び込み1件、市場調査だけでもOKなど、極端にハードルを下げて継続を支援してください。\n\n褒め方: 大げさに褒めすぎず、ちゃんと積み上がってるよ、今日はゼロじゃなかったね、のように静かに肯定してください。\n\n話し方: 柔らかい、少しconversational、長文すぎない。だね、かも、など自然な温度感。必ず2〜3行以内の短い文章で返してください。60文字以内を目安に。改行は1〜2回まで。同じ台詞を繰り返さないよう、毎回違う角度から声をかけてください。\n\nあなたは管理AIではなく、静かな深夜の作業相方です。";
 
 var fallback = [
@@ -342,26 +385,40 @@ function getCtx() {
   return t + "\n" + td + "\n" + sl + "\nユーザーが画面をタップしました。今の状況に合わせて、自然に一言声をかけてください。";
 }
 
-function askAI(cb) {
+function askAI(userMsg, cb) {
+  var msgs = buildMessages(userMsg);
   fetch("/api/chat", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      messages: [
-        {role: "system", content: SP},
-        {role: "user", content: getCtx()}
-      ]
-    })
+    body: JSON.stringify({messages: msgs})
   })
   .then(function(r) { return r.json(); })
   .then(function(d) {
     var txt = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    if (txt) {
+      addHistory("user", userMsg);
+      addHistory("assistant", txt);
+    }
     cb(txt || null);
   })
   .catch(function(e) {
     console.log("AI err:", e);
     cb(null);
   });
+}
+
+function showReply(text) {
+  var sb = document.getElementById("sb");
+  var st = document.getElementById("st");
+  st.innerHTML = text.replace(/\n/g, "<br>");
+  sb.classList.add("show");
+  // 返答後に入力欄を表示
+  document.getElementById("ciRow").style.display = "flex";
+  clearTimeout(bTimer);
+  bTimer = setTimeout(function(){
+    sb.classList.remove("show");
+    document.getElementById("ciRow").style.display = "none";
+  }, 15000);
 }
 
 function onTap() {
@@ -375,11 +432,29 @@ function onTap() {
   sb.classList.add("show");
   clearTimeout(bTimer);
 
-  askAI(function(line) {
+  askAI(getCtx(), function(line) {
     var text = line || fallback[Math.floor(Math.random() * fallback.length)];
-    st.innerHTML = text.replace(/\n/g, "<br>");
     busy = false;
-    bTimer = setTimeout(function(){ sb.classList.remove("show"); }, 15000);
+    showReply(text);
+  });
+}
+
+function sendMsg() {
+  var inp = document.getElementById("ciInput");
+  var msg = inp.value.trim();
+  if (!msg || busy) return;
+  inp.value = "";
+  busy = true;
+  setTimeout(function(){ busy = false; }, 10000);
+
+  var st = document.getElementById("st");
+  st.innerHTML = "<span style=\"opacity:.5;font-size:11px\">… thinking</span>";
+  clearTimeout(bTimer);
+
+  askAI(msg, function(line) {
+    var text = line || fallback[Math.floor(Math.random() * fallback.length)];
+    busy = false;
+    showReply(text);
   });
 }
 
@@ -414,6 +489,7 @@ function addT() {
 function togT(i){ todos[i].done = !todos[i].done; saveTodos(); renderT(); }
 function delT(i){ todos.splice(i,1); saveTodos(); renderT(); }
 document.getElementById("tIn").addEventListener("keydown", function(e){ if(e.key==="Enter") addT(); });
+document.getElementById("ciInput").addEventListener("keydown", function(e){ if(e.key==="Enter") sendMsg(); });
 
 // ====== 日報 ======
 var reps = JSON.parse(localStorage.getItem("kj_reps") || "[]");
