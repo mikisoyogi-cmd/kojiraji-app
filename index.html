@@ -377,9 +377,66 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   filter: brightness(0.82) saturate(1.1);
   z-index: 1;
 }
+
+/* ===== ローディングオーバーレイ ===== */
+#loadingOverlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #060a14;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: opacity 0.8s ease;
+}
+#loadingOverlay.hidden {
+  opacity: 0; pointer-events: none;
+}
+.loading-char {
+  width: 120px; height: 120px; border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(74,158,255,0.3);
+  box-shadow: 0 0 30px rgba(74,158,255,0.2);
+  animation: loadPulse 2s ease-in-out infinite;
+}
+.loading-char img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+@keyframes loadPulse { 0%,100%{box-shadow:0 0 20px rgba(74,158,255,0.2)} 50%{box-shadow:0 0 40px rgba(74,158,255,0.5)} }
+.loading-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px; letter-spacing: 0.3em;
+  color: rgba(74,158,255,0.8);
+  text-shadow: 0 0 12px rgba(74,158,255,0.4);
+}
+.loading-hint {
+  font-size: 11px; color: rgba(100,140,180,0.6);
+  letter-spacing: 0.2em;
+  animation: blinkHint 1.8s ease-in-out infinite;
+}
+@keyframes blinkHint { 0%,100%{opacity:0.3} 50%{opacity:0.9} }
+.loading-wave { display: flex; gap: 4px; align-items: center; }
+.loading-wave span {
+  display: inline-block; width: 3px; border-radius: 2px;
+  background: rgba(74,158,255,0.5);
+  animation: waveLoad 1s ease-in-out infinite;
+}
+.loading-wave span:nth-child(1){height:8px;animation-delay:0s}
+.loading-wave span:nth-child(2){height:14px;animation-delay:0.15s}
+.loading-wave span:nth-child(3){height:20px;animation-delay:0.3s}
+.loading-wave span:nth-child(4){height:14px;animation-delay:0.45s}
+.loading-wave span:nth-child(5){height:8px;animation-delay:0.6s}
+@keyframes waveLoad { 0%,100%{transform:scaleY(0.5);opacity:0.3} 50%{transform:scaleY(1);opacity:1} }
 </style>
 </head>
 <body>
+<div id="loadingOverlay">
+  <div class="loading-char">
+    <img src="" alt="">
+  </div>
+  <div class="loading-title">KOJIRAJI ROOM</div>
+  <div class="loading-wave">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="loading-hint">— tap to enter —</div>
+</div>
 <div class="app">
 
   <!-- HERO -->
@@ -818,11 +875,35 @@ function showToast(msg){
 // ====== 動画セットアップ ======
 (function(){
   const v = document.getElementById('heroVideo');
-  v.load();
-  const tryPlay = () => v.play().catch(()=>{});
-  tryPlay();
-  // タップでも再生開始（自動再生ブロック対策）
-  document.getElementById('heroArea').addEventListener('click', tryPlay, {once:true});
+  const overlay = document.getElementById('loadingOverlay');
+
+  function startApp() {
+    // 動画再生
+    v.muted = true;
+    v.load();
+    v.play().then(() => {
+      // 再生成功→オーバーレイをフェードアウト
+      overlay.classList.add('hidden');
+      setTimeout(() => overlay.remove(), 900);
+    }).catch(err => {
+      console.log('play error:', err);
+      overlay.classList.add('hidden');
+      setTimeout(() => overlay.remove(), 900);
+    });
+  }
+
+  // オーバーレイタップで開始
+  overlay.addEventListener('click', startApp, { once: true });
+
+  // 1秒後に自動で試みる（PCブラウザ等では自動再生できる場合）
+  setTimeout(() => {
+    v.play().then(() => {
+      overlay.classList.add('hidden');
+      setTimeout(() => overlay.remove(), 900);
+    }).catch(() => {
+      // iOSはタップ待ち（何もしない）
+    });
+  }, 800);
 })();
 
 // ====== Init ======
