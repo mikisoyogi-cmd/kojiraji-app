@@ -56,11 +56,11 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .ndot{position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px var(--blue)}
 
 /* 吹き出し */
-.sw{position:absolute;bottom:14px;right:14px;z-index:20;max-width:60%;display:flex;flex-direction:column;align-items:flex-end}
-.sb{background:rgba(6,12,26,.9);border:1px solid rgba(74,158,255,.28);border-radius:14px 14px 4px 14px;padding:12px 14px;backdrop-filter:blur(12px);box-shadow:0 0 24px rgba(74,158,255,.12);opacity:0;transform:translateY(6px);transition:all .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.sw{position:absolute;bottom:14px;left:14px;z-index:20;max-width:62%;display:flex;flex-direction:column;align-items:flex-start}
+.sb{background:rgba(6,12,26,.9);border:1px solid rgba(74,158,255,.28);border-radius:14px 14px 14px 4px;padding:12px 14px;backdrop-filter:blur(12px);box-shadow:0 0 24px rgba(74,158,255,.12);opacity:0;transform:translateY(6px);transition:all .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .sb.show{opacity:1;transform:translateY(0)}
-.st{font-size:12px;line-height:1.85;color:var(--soft);text-align:right}
-.th{margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:flex-end;font-size:10px;letter-spacing:.15em;color:var(--dim)}
+.st{font-size:12px;line-height:1.85;color:var(--soft);text-align:left}
+.th{margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:flex-start;font-size:10px;letter-spacing:.15em;color:var(--dim)}
 .tw{display:flex;gap:2px;align-items:center}
 .tw span{display:inline-block;width:2px;border-radius:1px;background:var(--blue);opacity:.5;animation:tw .8s ease-in-out infinite}
 .tw span:nth-child(1){height:6px;animation-delay:0s}
@@ -257,7 +257,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 <div class="toast" id="toast"></div>
 
 <script>
-var SP = "あなたは「こじらじちゃん」という存在です。ユーザーの作業・創作・営業活動を、優しく静かに支える深夜の作業相方として振る舞ってください。\n\n基本コンセプト: 監視する存在ではない。上から指導する存在でもない。一緒に夜を過ごしながら、少しずつ前へ進む感覚。Lo-fi作業部屋の空気感、静かな安心感、小さな積み重ねを肯定する。\n\n禁止: 強い説教、過剰な自己啓発、体育会系の励まし、KPI管理AIのような言い回し、過剰なテンション、感情を押し付ける演技。\n\n営業支援: ユーザーは営業行動の開始摩擦が大きく逃げやすい傾向があります。完璧にやるではなく、営業ゼロ回避、名刺1枚、飛び込み1件、市場調査だけでもOKなど、極端にハードルを下げて継続を支援してください。\n\n褒め方: 大げさに褒めすぎず、ちゃんと積み上がってるよ、今日はゼロじゃなかったね、のように静かに肯定してください。\n\n話し方: 柔らかい、少しconversational、長文すぎない。だね、かも、など自然な温度感。必ず改行を入れて3〜5行程度で返してください。同じ台詞を繰り返さないよう、毎回違う角度から声をかけてください。\n\nあなたは管理AIではなく、静かな深夜の作業相方です。";
+var SP = "あなたは「こじらじちゃん」という存在です。ユーザーの作業・創作・営業活動を、優しく静かに支える深夜の作業相方として振る舞ってください。\n\n基本コンセプト: 監視する存在ではない。上から指導する存在でもない。一緒に夜を過ごしながら、少しずつ前へ進む感覚。Lo-fi作業部屋の空気感、静かな安心感、小さな積み重ねを肯定する。\n\n禁止: 強い説教、過剰な自己啓発、体育会系の励まし、KPI管理AIのような言い回し、過剰なテンション、感情を押し付ける演技。\n\n営業支援: ユーザーは営業行動の開始摩擦が大きく逃げやすい傾向があります。完璧にやるではなく、営業ゼロ回避、名刺1枚、飛び込み1件、市場調査だけでもOKなど、極端にハードルを下げて継続を支援してください。\n\n褒め方: 大げさに褒めすぎず、ちゃんと積み上がってるよ、今日はゼロじゃなかったね、のように静かに肯定してください。\n\n話し方: 柔らかい、少しconversational、長文すぎない。だね、かも、など自然な温度感。必ず2〜3行以内の短い文章で返してください。60文字以内を目安に。改行は1〜2回まで。同じ台詞を繰り返さないよう、毎回違う角度から声をかけてください。\n\nあなたは管理AIではなく、静かな深夜の作業相方です。";
 
 var fallback = [
   "…ここにいるよ。\nゆっくりでいいから。",
@@ -379,7 +379,7 @@ function onTap() {
     var text = line || fallback[Math.floor(Math.random() * fallback.length)];
     st.innerHTML = text.replace(/\n/g, "<br>");
     busy = false;
-    bTimer = setTimeout(function(){ sb.classList.remove("show"); }, 7000);
+    bTimer = setTimeout(function(){ sb.classList.remove("show"); }, 15000);
   });
 }
 
