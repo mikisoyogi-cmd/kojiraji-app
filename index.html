@@ -39,7 +39,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 @keyframes ldWave{0%,100%{transform:scaleY(.5);opacity:.3}50%{transform:scaleY(1);opacity:1}}
 
 /* HERO */
-.hero{position:relative;height:56vw;max-height:360px;min-height:240px;flex-shrink:0;overflow:hidden;background:#060a14;cursor:pointer}
+.hero{position:relative;height:56vw;max-height:360px;min-height:240px;flex-shrink:0;overflow:hidden;background:#060a14;cursor:pointer;transition:height .3s ease,max-height .3s ease}
+.hero.expanded{height:80vw;max-height:480px}
 .hero-bg{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;filter:brightness(.78) saturate(1.12);position:absolute;top:0;left:0;z-index:0}
 #heroVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.82) saturate(1.1);z-index:1}
 .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(6,10,20,.7) 75%,#060a14 100%);pointer-events:none;z-index:2}
@@ -168,9 +169,9 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 </div>
 
 <div class="app">
-  <div class="hero" id="heroArea" onclick="onTap()">
-    <img class="hero-bg" src="kojiraji_bg.png" alt="">
-    <video id="heroVideo" loop muted playsinline></video>
+  <div class="hero" id="heroArea">
+    <img class="hero-bg" src="kojiraji_bg.png" alt="" onclick="onTap()">
+    <video id="heroVideo" loop muted playsinline onclick="onTap()"></video>
     <div class="hp-glow"></div>
     <div class="hdr">
       <div>
@@ -182,8 +183,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     </div>
     <div class="sw">
       <div class="sb" id="sb"><p class="st" id="st"></p></div>
-      <div class="ci-row" id="ciRow" style="display:none">
-        <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100">
+      <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
+        <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
         <button class="ci-btn" onclick="sendMsg()">→</button>
       </div>
       <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
@@ -410,14 +411,16 @@ function askAI(userMsg, cb) {
 function showReply(text) {
   var sb = document.getElementById("sb");
   var st = document.getElementById("st");
+  var hero = document.getElementById("heroArea");
   st.innerHTML = text.replace(/\n/g, "<br>");
   sb.classList.add("show");
-  // 返答後に入力欄を表示
+  hero.classList.add("expanded");
   document.getElementById("ciRow").style.display = "flex";
   clearTimeout(bTimer);
   bTimer = setTimeout(function(){
     sb.classList.remove("show");
     document.getElementById("ciRow").style.display = "none";
+    hero.classList.remove("expanded");
   }, 15000);
 }
 
@@ -428,8 +431,10 @@ function onTap() {
 
   var sb = document.getElementById("sb");
   var st = document.getElementById("st");
+  var hero = document.getElementById("heroArea");
   st.innerHTML = "<span style=\"opacity:.5;font-size:11px\">… thinking</span>";
   sb.classList.add("show");
+  hero.classList.add("expanded");
   clearTimeout(bTimer);
 
   askAI(getCtx(), function(line) {
