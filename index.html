@@ -616,25 +616,36 @@ function togT(i){ todos[i].done = !todos[i].done; saveTodos(); renderT(); }
 function delT(i){ todos.splice(i,1); saveTodos(); renderT(); }
 document.getElementById("tIn").addEventListener("keydown", function(e){ if(e.key==="Enter") addT(); });
 var inputFocused = false;
+var focusBlurTimer = null;
+
 document.getElementById("ciInput").addEventListener("keydown", function(e){ if(e.key==="Enter") sendMsg(); });
+
 document.getElementById("ciInput").addEventListener("focus", function(){
+  // blurの遅延タイマーをキャンセル
+  clearTimeout(focusBlurTimer);
   inputFocused = true;
-  clearTimeout(bTimer); // タイマーを止める
+  clearTimeout(bTimer); // 消えるタイマーを止める
 });
+
 document.getElementById("ciInput").addEventListener("blur", function(){
-  inputFocused = false;
-  // フォーカスが外れたら15秒タイマー再スタート
-  var sb = document.getElementById("sb");
-  if (sb.classList.contains("show")) {
-    clearTimeout(bTimer);
-    bTimer = setTimeout(function(){
-      if (!inputFocused) {
-        sb.classList.remove("show");
-        document.getElementById("ciRow").style.display = "none";
-        document.getElementById("heroArea").classList.remove("expanded");
-      }
-    }, 15000);
-  }
+  // iOSはキーボード展開中にblurが一瞬発火することがある
+  // 300ms待ってから本当にフォーカスが外れたか確認
+  focusBlurTimer = setTimeout(function(){
+    // まだciInputにフォーカスがあれば何もしない
+    if (document.activeElement === document.getElementById("ciInput")) return;
+    inputFocused = false;
+    // フォーカスが外れたら30秒後に消す（長めに）
+    var sb = document.getElementById("sb");
+    if (sb.classList.contains("show")) {
+      clearTimeout(bTimer);
+      bTimer = setTimeout(function(){
+        if (!inputFocused) {
+          sb.classList.remove("show");
+          document.getElementById("ciRow").style.display = "none";
+        }
+      }, 30000);
+    }
+  }, 300);
 });
 
 // ====== 日報 ======
