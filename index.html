@@ -184,6 +184,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 </style>
 </head>
 <body>
+<audio id="bgm" src="bgm.mp3" loop preload="none" style="display:none"></audio>
 <div id="loader">
   <div class="ld-ring">🎧</div>
   <div class="ld-title">KOJIRAJI ROOM</div>
@@ -202,7 +203,10 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
           <div class="hdr-date" id="dDate"></div>
           <div class="hdr-time" id="dTime"></div>
         </div>
-        <div class="hdr-right"><div class="hdr-icon">🔔<div class="ndot"></div></div></div>
+        <div class="hdr-right">
+          <div class="hdr-icon" id="bgmBtn" onclick="toggleBGM(event)" style="cursor:pointer;font-size:16px;opacity:.7;transition:opacity .2s">🔇</div>
+          <div class="hdr-icon">🔔<div class="ndot"></div></div>
+        </div>
       </div>
       <div class="sw-area" id="swArea">
         <div class="sb" id="sb"><p class="st" id="st"></p></div>
@@ -453,6 +457,9 @@ function startApp() {
   started = true;
   // 動画ソース設定
   if (window._startVideo) window._startVideo();
+  // BGM初期化・再生開始
+  initBGM();
+  startBGM();
   // オーバーレイフェードアウト
   loader.classList.add("out");
   setTimeout(function(){ loader.style.display = "none"; }, 900);
@@ -711,6 +718,44 @@ function toast(msg){ var t=document.getElementById("toast"); t.textContent=msg; 
     }
   });
 })();
+
+// ====== BGM ======
+var bgmPlaying = false;
+var bgmAudio = null;
+
+function initBGM() {
+  bgmAudio = document.getElementById("bgm");
+  if (!bgmAudio) return;
+  bgmAudio.volume = 0.35; // 控えめな音量
+}
+
+function toggleBGM(e) {
+  if (e) e.stopPropagation();
+  if (!bgmAudio) return;
+  if (bgmPlaying) {
+    bgmAudio.pause();
+    bgmPlaying = false;
+    document.getElementById("bgmBtn").textContent = "🔇";
+    document.getElementById("bgmBtn").style.opacity = ".5";
+  } else {
+    bgmAudio.play().then(function() {
+      bgmPlaying = true;
+      document.getElementById("bgmBtn").textContent = "🎵";
+      document.getElementById("bgmBtn").style.opacity = "1";
+    }).catch(function(e){ console.log("bgm err:", e); });
+  }
+}
+
+function startBGM() {
+  if (!bgmAudio || bgmPlaying) return;
+  bgmAudio.play().then(function() {
+    bgmPlaying = true;
+    document.getElementById("bgmBtn").textContent = "🎵";
+    document.getElementById("bgmBtn").style.opacity = "1";
+  }).catch(function(){
+    // 自動再生ブロック時は手動ボタンで対応
+  });
+}
 
 // ====== Init ======
 renderT(); renderR(); renderS();
