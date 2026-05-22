@@ -167,39 +167,20 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(8,16,36,.95);border:1px solid rgba(74,158,255,.3);border-radius:12px;padding:9px 16px;color:var(--soft);font-size:12px;z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 .toast.on{opacity:1}
 
-/* === 案C ドロワー === */
-.hero{height:70vh !important;max-height:none !important;min-height:300px !important;transition:height .4s cubic-bezier(.4,0,.2,1) !important;}
-.hero.shrunk{height:35vh !important;}
+/* === 案B === */
+.hero{height:52vh !important;max-height:420px !important;min-height:240px !important;}
 .sb{border-radius:4px 12px 12px 12px;position:relative;margin-top:14px}
 .sb::before{content:'';position:absolute;top:-12px;left:18px;border:6px solid transparent;border-bottom-color:rgba(74,158,255,.25)}
 .sb::after{content:'';position:absolute;top:-10px;left:19px;border:5px solid transparent;border-bottom-color:rgba(6,12,28,.9)}
-/* ドロワー */
-.drawer{
-  position:fixed;bottom:60px;left:0;right:0;max-width:430px;margin:0 auto;
-  background:rgba(6,10,20,.97);
-  border-top:1px solid rgba(74,158,255,.15);
-  border-radius:20px 20px 0 0;
-  transform:translateY(calc(100% - 48px));
-  transition:transform .4s cubic-bezier(.4,0,.2,1);
-  z-index:50;
-  max-height:calc(100dvh - 120px);
-  overflow:hidden;
-  display:flex;flex-direction:column;
-}
-.drawer.open{transform:translateY(0);}
-.drawer-handle{
-  height:48px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;flex-shrink:0;gap:10px;
-  padding:0 20px;
-}
-.drawer-handle-bar{width:36px;height:4px;border-radius:2px;background:rgba(74,158,255,.3);}
-.drawer-handle-tabs{display:flex;gap:12px;font-size:11px;color:var(--dim);letter-spacing:.08em}
-.drawer-handle-tabs span{cursor:pointer;padding:4px 8px;border-radius:8px;transition:all .2s}
-.drawer-handle-tabs span.on{color:var(--blue);background:rgba(74,158,255,.1)}
-.drawer-content{flex:1;overflow-y:auto;padding:0 14px 20px;}
-.drawer-content::-webkit-scrollbar{display:none}
-.drawer-panel{display:none;flex-direction:column;gap:8px;padding-top:8px}
-.drawer-panel.on{display:flex}
+/* サマリーミニカード */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px 0;}
+.sum-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:border-color .2s}
+.sum-card:active{border-color:rgba(74,158,255,.4)}
+.sum-card.wide{grid-column:1/-1;}
+.sum-lbl{font-size:9px;letter-spacing:.1em;color:var(--dim)}
+.sum-val{font-size:22px;font-weight:200;color:var(--text);line-height:1}
+.sum-unit{font-size:10px;color:var(--dim);margin-left:2px}
+.sum-arrow{font-size:11px;color:var(--dim);align-self:flex-end;margin-top:auto}
 </style>
 </head>
 <body>
@@ -209,52 +190,66 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   <div class="ld-wave"><span></span><span></span><span></span><span></span><span></span></div>
   <div class="ld-hint">— tap to enter —</div>
 </div>
-<div class="app" style="position:relative;">
-  <!-- キャラエリア（常時表示） -->
-  <div class="hero" id="heroArea" onclick="onTap()">
-    <video id="videoA" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:1;cursor:pointer;" onclick="onTap()"></video>
-    <video id="videoB" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:2;opacity:0;cursor:pointer;" onclick="onTap()"></video>
-    <div class="hp-glow"></div>
-    <div class="hdr">
-      <div>
-        <div class="hdr-title">KOJIRAJI ROOM</div>
-        <div class="hdr-date" id="dDate"></div>
-        <div class="hdr-time" id="dTime"></div>
+<div class="app">
+  <div class="pan on" id="p-home" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="hero" id="heroArea" onclick="onTap()">
+      <video id="videoA" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:1;cursor:pointer;" onclick="onTap()"></video>
+      <video id="videoB" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:2;opacity:0;cursor:pointer;" onclick="onTap()"></video>
+      <div class="hp-glow"></div>
+      <div class="hdr">
+        <div>
+          <div class="hdr-title">KOJIRAJI ROOM</div>
+          <div class="hdr-date" id="dDate"></div>
+          <div class="hdr-time" id="dTime"></div>
+        </div>
+        <div class="hdr-right"><div class="hdr-icon">🔔<div class="ndot"></div></div></div>
       </div>
-      <div class="hdr-right"><div class="hdr-icon">🔔<div class="ndot"></div></div></div>
+      <div class="sw-area" id="swArea">
+        <div class="sb" id="sb"><p class="st" id="st"></p></div>
+        <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
+          <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
+          <button class="ci-btn" onclick="sendMsg()">→</button>
+        </div>
+        <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
+      </div>
     </div>
-    <div class="sw-area" id="swArea">
-      <div class="sb" id="sb"><p class="st" id="st"></p></div>
-      <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
-        <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
-        <button class="ci-btn" onclick="sendMsg()">→</button>
+    <!-- サマリーグリッド（スクロールなし） -->
+    <div class="sum-grid" style="flex:1;overflow:hidden;align-content:start;">
+      <div class="sum-card" onclick="go('todo')">
+        <div class="sum-lbl">TODO完了</div>
+        <div><span class="sum-val" id="hComp">0</span><span class="sum-unit">/ <span id="hTot">0</span>件</span></div>
+        <div class="sum-arrow">→</div>
       </div>
-      <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
+      <div class="sum-card" onclick="go('sales')">
+        <div class="sum-lbl">今月の訪問</div>
+        <div><span class="sum-val" id="hVisits">0</span><span class="sum-unit">件</span></div>
+        <div class="sum-arrow">→</div>
+      </div>
+      <div class="sum-card" onclick="go('sales')">
+        <div class="sum-lbl">今月の売上</div>
+        <div><span style="font-size:12px;color:var(--dim)">¥</span><span class="sum-val" id="hSales">0</span></div>
+        <div class="sum-arrow">→</div>
+      </div>
+      <div class="sum-card" onclick="go('sales')">
+        <div class="sum-lbl">今年の売上</div>
+        <div><span style="font-size:12px;color:var(--dim)">¥</span><span class="sum-val" id="hYearly">0</span></div>
+        <div class="sum-arrow">→</div>
+      </div>
     </div>
   </div>
-</div>
-
-<!-- ドロワー -->
-<div class="drawer" id="drawer">
-  <div class="drawer-handle" onclick="toggleDrawer()">
-    <div class="drawer-handle-bar"></div>
-    <div class="drawer-handle-tabs">
-      <span class="on" id="dt-todo" onclick="event.stopPropagation();drawerTab('todo')">TODO</span>
-      <span id="dt-report" onclick="event.stopPropagation();drawerTab('report')">日報</span>
-      <span id="dt-sales" onclick="event.stopPropagation();drawerTab('sales')">実績</span>
-    </div>
-  </div>
-  <div class="drawer-content">
-    <!-- TODO -->
-    <div class="drawer-panel on" id="dp-todo">
+  <!-- TODO -->
+  <div class="pan" id="p-todo">
+    <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">週間TODO</div>
         <div class="ti-row"><input class="ti" id="tIn" placeholder="タスクを追加..."><button class="tadd" onclick="addT()">＋</button></div>
         <div class="tlist" id="tList"></div>
       </div>
     </div>
-    <!-- 日報 -->
-    <div class="drawer-panel" id="dp-report">
+  </div>
+  <!-- 日報 -->
+  <div class="pan" id="p-report">
+    <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">今日の日報 — <span id="rDate"></span></div>
         <textarea class="rta" id="rText" placeholder="今日やったこと、気づき、明日のこと…"></textarea>
@@ -264,8 +259,10 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
         <div class="clab">過去の日報</div><div id="rHist"></div>
       </div>
     </div>
-    <!-- 実績 -->
-    <div class="drawer-panel" id="dp-sales">
+  </div>
+  <!-- 実績 -->
+  <div class="pan" id="p-sales">
+    <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">月間 訪問件数</div>
         <div class="bv"><span id="vVal">0</span><span style="font-size:12px;color:var(--dim);margin-left:2px">件</span></div>
@@ -286,20 +283,14 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     </div>
   </div>
 </div>
-
-<!-- ボトムナビ（案Cはシンプルに） -->
-<div class="nav" style="z-index:60;">
-  <button class="nb on" id="n-home" onclick="drawerClose()"><span class="ni">🏠</span><span class="nl">HOME</span></button>
-  <button class="nb" id="n-todo" onclick="drawerOpen('todo')"><span class="ni">📋</span><span class="nl">TODO</span></button>
-  <button class="nb" id="n-report" onclick="drawerOpen('report')"><span class="ni">✏️</span><span class="nl">日報</span></button>
-  <button class="nb" id="n-sales" onclick="drawerOpen('sales')"><span class="ni">📊</span><span class="nl">実績</span></button>
+<div class="nav">
+  <button class="nb on" id="n-home" onclick="go('home')"><span class="ni">🏠</span><span class="nl">HOME</span></button>
+  <button class="nb" id="n-todo" onclick="go('todo')"><span class="ni">📋</span><span class="nl">TODO</span></button>
+  <button class="nb" id="n-report" onclick="go('report')"><span class="ni">✏️</span><span class="nl">日報</span></button>
+  <button class="nb" id="n-sales" onclick="go('sales')"><span class="ni">📊</span><span class="nl">実績</span></button>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// go関数をダミーで定義（案Cはdrawerで制御）
-function go(name) { drawerOpen(name); }
-
-
 
 // ====== 動画切り替え（シンプル確実版） ======
 (function() {
@@ -724,44 +715,17 @@ function toast(msg){ var t=document.getElementById("toast"); t.textContent=msg; 
 // ====== Init ======
 renderT(); renderR(); renderS();
 
-
-// ドロワー制御
-var drawerOpen_ = false;
-function toggleDrawer() {
-  if (drawerOpen_) drawerClose(); else drawerOpen('todo');
-}
-function drawerOpen(tab) {
-  drawerOpen_ = true;
-  document.getElementById("drawer").classList.add("open");
-  document.getElementById("heroArea").classList.add("shrunk");
-  drawerTab(tab || 'todo');
-  // ナビ更新
-  ["home","todo","report","sales"].forEach(function(n){
-    document.getElementById("n-"+n).classList.toggle("on", n===tab);
-  });
-  document.getElementById("n-home").classList.remove("on");
-}
-function drawerClose() {
-  drawerOpen_ = false;
-  document.getElementById("drawer").classList.remove("open");
-  document.getElementById("heroArea").classList.remove("shrunk");
-  ["home","todo","report","sales"].forEach(function(n){
-    document.getElementById("n-"+n).classList.remove("on");
-  });
-  document.getElementById("n-home").classList.add("on");
-}
-function drawerTab(tab) {
-  ["todo","report","sales"].forEach(function(n){
-    var dp = document.getElementById("dp-"+n);
-    var dt = document.getElementById("dt-"+n);
-    if(dp) dp.classList.toggle("on", n===tab);
-    if(dt) dt.classList.toggle("on", n===tab);
-  });
-}
-// upHome（案C用）
+// 案B用ホーム更新
 function upHome() {
   var done=todos.filter(function(t){return t.done;}).length, tot=todos.length;
-  // 案Cはホームにサマリー表示なし
+  var el;
+  el=document.getElementById("hComp"); if(el) el.textContent=done;
+  el=document.getElementById("hTot");  if(el) el.textContent=tot;
+  var m=getM();
+  el=document.getElementById("hVisits"); if(el) el.textContent=m.visits.toLocaleString();
+  el=document.getElementById("hSales");  if(el) el.textContent=m.sales.toLocaleString();
+  var yr=0; Object.values(SD).forEach(function(v){yr+=(v.sales||0);});
+  el=document.getElementById("hYearly"); if(el) el.textContent=yr.toLocaleString();
 }
 </script>
 </body>
