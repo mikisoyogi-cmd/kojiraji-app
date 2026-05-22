@@ -457,8 +457,9 @@ function startApp() {
   started = true;
   // 動画ソース設定
   if (window._startVideo) window._startVideo();
-  // BGM初期化・再生開始
+  // BGM・ボイスコンテキスト初期化
   initBGM();
+  initVoiceCtx();
   startBGM();
   // オーバーレイフェードアウト
   loader.classList.add("out");
@@ -728,7 +729,7 @@ var bgmAudio = null;
 function initBGM() {
   bgmAudio = document.getElementById("bgm");
   if (!bgmAudio) return;
-  bgmAudio.volume = 0.28; // 控えめな音量
+  bgmAudio.volume = 0.35; // 控えめな音量
 }
 
 function toggleBGM(e) {
@@ -761,26 +762,23 @@ function startBGM() {
 
 // ====== ボイス再生 ======
 var voiceMap = {
-  // カテゴリ: [ファイル名リスト]
-  praise:   ["voice_iine","voice_ganbatteru","voice_susunderu"],   // 褒める
-  agree:    ["voice_soudane","voice_watashimo","voice_wakaru","voice_un"], // 同意・共感
-  comfort:  ["voice_aserazu","voice_munashi","voice_sokka"],        // 励ます・慰め
-  question: ["voice_doushitano","voice_kyohadousu","voice_doudarou"], // 質問
-  casual:   ["voice_fufu","voice_un","voice_sokka"],                // 相槌
-  night:    ["voice_madaokiteru"],                                  // 深夜
-  greet:    ["voice_okaeri"],                                       // 挨拶
+  praise:   ["voice_iine","voice_ganbatteru","voice_susunderu"],
+  agree:    ["voice_soudane","voice_watashimo","voice_wakaru","voice_un"],
+  comfort:  ["voice_aserazu","voice_munashi","voice_sokka"],
+  question: ["voice_doushitano","voice_kyohadousu","voice_doudarou"],
+  casual:   ["voice_fufu","voice_un","voice_sokka"],
+  night:    ["voice_madaokiteru"],
+  greet:    ["voice_okaeri"],
 };
 
-// AI台詞からカテゴリを判定
 function detectVoiceCategory(text) {
   if (!text) return "casual";
-  // キーワードベースで判定
-  if (/まだ|深夜|夜|起き/.test(text))                      return "night";
-  if (/おかえり|また来/.test(text))                         return "greet";
+  if (/まだ|深夜|夜|起き/.test(text))                           return "night";
+  if (/おかえり|また来/.test(text))                              return "greet";
   if (/すごい|えらい|いいね|進んでる|積み上|ちゃんと/.test(text)) return "praise";
-  if (/焦|無理|ゆっくり|大丈夫|休/.test(text))             return "comfort";
-  if (/そうだね|わかる|私も|だよね/.test(text))             return "agree";
-  if (/どう|どうす|何|する？|かな？|みない？/.test(text))   return "question";
+  if (/焦|無理|ゆっくり|大丈夫|休/.test(text))                  return "comfort";
+  if (/そうだね|わかる|私も|だよね/.test(text))                  return "agree";
+  if (/どう|どうす|何|する？|かな？|みない？/.test(text))        return "question";
   return "casual";
 }
 
@@ -789,28 +787,69 @@ function pickVoice(category) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-var voiceAudio = new Audio();
-voiceAudio.volume = 1.0;
+// AudioContext（iOS対応：tap to enter時に初期化）
+var voiceCtx = null;
+var voiceGainNode = null;
+var voiceCtxReady = false;
+
+function initVoiceCtx() {
+  if (voiceCtxReady) return;
+  try {
+    voiceCtx = new (window.AudioContext || window.webkitAudioContext)();
+    voiceGainNode = voiceCtx.createGain();
+    voiceGainNode.gain.value = 3.0; // 300%
+    voiceGainNode.connect(voiceCtx.destination);
+    // iOS解除用：無音バッファを再生
+    var buf = voiceCtx.createBuffer(1, 1, 22050);
+    var s = voiceCtx.createBufferSource();
+    s.buffer = buf;
+    s.connect(voiceCtx.destination);
+    s.start(0);
+    voiceCtxReady = true;
+  } catch(e) { console.log("voiceCtx err:", e); }
+}
 
 function playVoice(text) {
   var cat  = detectVoiceCategory(text);
   var file = pickVoice(cat);
   console.log("voice:", file, "("+cat+")");
 
-  // BGMを少し下げてボイス再生
-  if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.04;
+  // BGMをわずかに下げる
+  var bgmVol = 0.35;
+  if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.25;
 
-  voiceAudio.src = file + ".mp3";
-  voiceAudio.load();
-  voiceAudio.play().then(function() {
-    voiceAudio.onended = function() {
-      // ボイス終了後BGMを元に戻す
-      if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.28;
-    };
-  }).catch(function(e) {
-    console.log("voice err:", e);
-    if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.28;
-  });
+  function restoreBGM() {
+    if (bgmAudio && bgmPlaying) bgmAudio.volume = bgmVol;
+  }
+
+  // Web Audio API（300%増幅）
+  if (voiceCtxReady && voiceCtx) {
+    if (voiceCtx.state === "suspended") voiceCtx.resume();
+    fetch(file + ".mp3")
+      .then(function(r) { return r.arrayBuffer(); })
+      .then(function(buf) { return voiceCtx.decodeAudioData(buf); })
+      .then(function(decoded) {
+        var src = voiceCtx.createBufferSource();
+        src.buffer = decoded;
+        src.connect(voiceGainNode);
+        src.start(0);
+        src.onended = restoreBGM;
+      })
+      .catch(function() {
+        // フォールバック
+        var a = new Audio(file + ".mp3");
+        a.volume = 1.0;
+        a.play().catch(function(){});
+        a.onended = restoreBGM;
+      });
+    return;
+  }
+
+  // フォールバック（AudioContext非対応環境）
+  var a = new Audio(file + ".mp3");
+  a.volume = 1.0;
+  a.play().catch(function(e){ console.log("voice err:", e); restoreBGM(); });
+  a.onended = restoreBGM;
 }
 
 // ====== Init ======
