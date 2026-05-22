@@ -271,22 +271,26 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
         <div class="clab">月間 訪問件数</div>
         <div class="bv"><span id="vVal">0</span><span style="font-size:12px;color:var(--dim);margin-left:2px">件</span></div>
         <div class="mrow">
-          <input class="min" id="vIn" type="number" placeholder="件数">
-          <button class="bsm" onclick="addV()">追加</button>
-          <button class="bsm" onclick="setV()" style="background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:rgba(255,180,80,.8)">修正</button>
+          <input class="min" id="vIn" type="number" placeholder="件数を入力">
         </div>
-        <div style="font-size:10px;color:var(--dim);margin-top:4px">追加：今の数字に足す　修正：入力値に上書き</div>
+        <div class="mrow" style="margin-top:6px">
+          <button class="bsm" onclick="addV()" style="flex:1">＋ 追加</button>
+          <button class="bsm" onclick="setV()" style="flex:1;background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:rgba(255,180,80,.8)">✎ 修正</button>
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px">追加：足す　修正：上書き</div>
         <div class="bc" id="vChart"></div>
       </div>
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">月間 売上</div>
         <div class="bv">¥<span id="msVal">0</span></div>
         <div class="mrow">
-          <input class="min" id="msIn" type="number" placeholder="金額 (円)">
-          <button class="bsm" onclick="addMS()">追加</button>
-          <button class="bsm" onclick="setMS()" style="background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:rgba(255,180,80,.8)">修正</button>
+          <input class="min" id="msIn" type="number" placeholder="金額を入力 (円)">
         </div>
-        <div style="font-size:10px;color:var(--dim);margin-top:4px">追加：今の数字に足す　修正：入力値に上書き</div>
+        <div class="mrow" style="margin-top:6px">
+          <button class="bsm" onclick="addMS()" style="flex:1">＋ 追加</button>
+          <button class="bsm" onclick="setMS()" style="flex:1;background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:rgba(255,180,80,.8)">✎ 修正</button>
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px">追加：足す　修正：上書き</div>
       </div>
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">年間 売上</div>
