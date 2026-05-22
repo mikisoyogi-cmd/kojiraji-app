@@ -335,13 +335,7 @@ function startApp() {
   if (started) return;
   started = true;
   // 動画ソース設定
-  heroV.src = "kojiraji_anim.webm";
-  heroV.load();
-  heroV.play().catch(function() {
-    heroV.src = "kojiraji_anim.mp4";
-    heroV.load();
-    heroV.play().catch(function(){});
-  });
+  if (window._startVideo) window._startVideo();
   // オーバーレイフェードアウト
   loader.classList.add("out");
   setTimeout(function(){ loader.style.display = "none"; }, 900);
