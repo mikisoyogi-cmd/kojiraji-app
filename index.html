@@ -271,6 +271,50 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <script>
 
+// ====== 動画ランダム切り替え ======
+(function() {
+  var v = document.getElementById("heroVideo");
+  if (!v) return;
+
+  var anims = [
+    { name: "anim_idle",  weight: 60 },
+    { name: "anim_pen",   weight: 25 },
+    { name: "anim_think", weight: 15 }
+  ];
+
+  function pickAnim() {
+    var r = Math.random() * 100, acc = 0;
+    for (var i = 0; i < anims.length; i++) {
+      acc += anims[i].weight;
+      if (r < acc) return anims[i].name;
+    }
+    return anims[0].name;
+  }
+
+  function loadAnim(name) {
+    v.style.transition = "opacity 0.6s";
+    v.style.opacity = "0";
+    setTimeout(function() {
+      v.src = name + ".webm";
+      v.load();
+      v.play().catch(function() {
+        v.src = name + ".mp4";
+        v.load();
+        v.play().catch(function(){});
+      });
+      v.style.opacity = "1";
+    }, 600);
+  }
+
+  v.addEventListener("ended", function() {
+    loadAnim(pickAnim());
+  });
+
+  window._startVideo = function() {
+    loadAnim(pickAnim());
+  };
+})();
+
 // ====== 会話履歴 ======
 var chatHistory = [];
 var chatDate = new Date().toISOString().slice(0,10);
