@@ -178,8 +178,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <div class="app">
   <div class="hero" id="heroArea" onclick="onTap()">
-    <img id="heroBg" src="kojiraji_bg.jpg" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.82) saturate(1.1);z-index:0;">
-    <video id="heroVideo" muted playsinline onclick="onTap()" style="cursor:pointer;transition:opacity 0.5s"></video>
+    <video id="videoA" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:1;transition:opacity 0.8s;cursor:pointer;" onclick="onTap()"></video>
+    <video id="videoB" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:2;opacity:0;transition:opacity 0.8s;cursor:pointer;" onclick="onTap()"></video>
     <div class="hp-glow"></div>
     <div class="hdr">
       <div>
@@ -280,19 +280,20 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <script>
 
-// ====== 動画ランダム切り替え ======
+// ====== 動画ランダム切り替え（クロスフェード） ======
 (function() {
-  var v = document.getElementById("heroVideo");
-  if (!v) return;
-
-  // loop属性を外す（endedイベントで切り替えるため）
-  v.removeAttribute("loop");
+  var vA = document.getElementById("videoA");
+  var vB = document.getElementById("videoB");
+  if (!vA || !vB) return;
 
   var anims = [
     { name: "anim_idle",  weight: 60 },
     { name: "anim_pen",   weight: 25 },
     { name: "anim_think", weight: 15 }
   ];
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  var active = "A";
 
   function pickAnim() {
     var r = Math.random() * 100, acc = 0;
@@ -303,44 +304,41 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     return anims[0].name;
   }
 
-  var currentAnim = "";
-  function loadAnim(name) {
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    // 同じアニメが連続しても必ずreloadするためtimestampを付与
-    var ts = "?t=" + Date.now();
-    var primary   = isIOS ? (name + ".mp4" + ts)  : (name + ".webm" + ts);
-    var secondary = isIOS ? (name + ".webm" + ts) : (name + ".mp4" + ts);
+  function ext() { return isIOS ? ".mp4" : ".webm"; }
 
-    currentAnim = name;
-    v.style.opacity = "0";
-    setTimeout(function() {
-      v.pause();
-      v.src = primary;
+  function playVideo(v, name, cb) {
+    v.src = name + ext();
+    v.load();
+    v.play().then(cb).catch(function() {
+      v.src = name + ".mp4";
       v.load();
-      var p = v.play();
-      if (p !== undefined) {
-        p.then(function(){ v.style.opacity = "1"; })
-         .catch(function() {
-           v.src = secondary;
-           v.load();
-           v.play()
-             .then(function(){ v.style.opacity = "1"; })
-             .catch(function(e){ console.log("play err:", name, e); });
-         });
-      } else {
-        v.style.opacity = "1";
-      }
-    }, 300);
+      v.play().then(cb).catch(function(e){ console.log("err:", e); });
+    });
   }
 
-  // 動画終了したら次をランダム選択
-  v.addEventListener("ended", function() {
-    loadAnim(pickAnim());
-  });
+  function crossFade(name) {
+    var front = active === "A" ? vA : vB;
+    var back  = active === "A" ? vB : vA;
 
-  // 外部から呼び出す用
+    playVideo(back, name, function() {
+      back.style.zIndex  = "2";
+      back.style.opacity = "1";
+      front.style.opacity = "0";
+      front.style.zIndex  = "1";
+      active = active === "A" ? "B" : "A";
+      setTimeout(function() { front.pause(); front.removeAttribute("src"); }, 1000);
+    });
+  }
+
+  function onEnded() { crossFade(pickAnim()); }
+  vA.addEventListener("ended", onEnded);
+  vB.addEventListener("ended", onEnded);
+
   window._startVideo = function() {
-    loadAnim(pickAnim());
+    playVideo(vA, pickAnim(), function() {
+      vA.style.opacity = "1";
+      vA.style.zIndex  = "1";
+    });
   };
 })();
 
