@@ -326,6 +326,17 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     return isIOS ? (name + ".mp4") : (name + ".webm");
   }
 
+  // 伸びアニメ用サウンド
+  var stretchSound = new Audio("stretch_sound.mp3");
+  stretchSound.volume = 0.9;
+
+  function playAnimSound(name) {
+    if (name === "anim_stretch") {
+      stretchSound.currentTime = 0;
+      stretchSound.play().catch(function(){});
+    }
+  }
+
   function playNext() {
     var front = active === "A" ? vA : vB;
     var back  = active === "A" ? vB : vA;
@@ -341,13 +352,14 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     back.play().then(function() {
       // 再生確認できたらクロスフェード
       back.style.zIndex = "2";
-      // 同時にフェード
       requestAnimationFrame(function() {
         back.style.transition  = "opacity " + (FADE/1000) + "s ease";
         front.style.transition = "opacity " + (FADE/1000) + "s ease";
         back.style.opacity  = "1";
         front.style.opacity = "0";
       });
+      // アニメ専用サウンド再生
+      playAnimSound(name);
 
       setTimeout(function() {
         front.pause();
@@ -357,7 +369,6 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
       }, FADE + 50);
 
     }).catch(function() {
-      // WebM失敗→MP4で再試行
       back.src = name + ".mp4";
       back.load();
       back.play().then(function() {
@@ -368,6 +379,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
           back.style.opacity  = "1";
           front.style.opacity = "0";
         });
+        playAnimSound(name);
         setTimeout(function() {
           front.pause();
           front.src = "";
