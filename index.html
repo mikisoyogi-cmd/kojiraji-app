@@ -178,7 +178,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <div class="app">
   <div class="hero" id="heroArea" onclick="onTap()">
-    <video id="heroVideo" muted playsinline onclick="onTap()" style="cursor:pointer;transition:opacity 0.3s"></video>
+    <img id="heroBg" src="kojiraji_bg.jpg" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.82) saturate(1.1);z-index:0;">
+    <video id="heroVideo" muted playsinline onclick="onTap()" style="cursor:pointer;transition:opacity 0.5s"></video>
     <div class="hp-glow"></div>
     <div class="hdr">
       <div>
