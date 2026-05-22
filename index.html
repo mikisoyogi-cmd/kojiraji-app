@@ -294,8 +294,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   var active = "A";
-  var fadeOverlap = 1.2; // 終了何秒前から次の動画をフェードイン開始
-  var fadeDuration = 1000; // フェード時間（ms）
+  var fadeOverlap = 0.3; // 終了何秒前から次の動画をフェードイン開始
+  var fadeDuration = 300; // フェード時間（ms）
   var scheduled = false;
 
   function pickAnim() {
@@ -342,10 +342,10 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
       if (remaining <= fadeOverlap) {
         // フェード開始
         back.style.zIndex = "2";
-        setOpacity(back, 1, 0); // 即表示
+        setOpacity(back, 0, 0); // 透明スタート
         back.play().then(function() {
-          // 前の動画だけフェードアウト
-          setOpacity(front, 0, fadeDuration);
+          setOpacity(back, 1, fadeDuration);  // 次をフェードイン
+          setOpacity(front, 0, fadeDuration); // 前をフェードアウト
 
           setTimeout(function() {
             front.pause();
@@ -362,7 +362,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
           back.src = name + ".mp4";
           back.load();
           back.play().then(function() {
-            setOpacity(back, 1, 0); // 即表示
+            setOpacity(back, 0, 0);
+            setOpacity(back, 1, fadeDuration);
             setOpacity(front, 0, fadeDuration);
             setTimeout(function() {
               front.pause();
