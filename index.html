@@ -790,7 +790,7 @@ function pickVoice(category) {
 }
 
 var voiceAudio = new Audio();
-voiceAudio.volume = 0.9;
+voiceAudio.volume = 1.0;
 
 function playVoice(text) {
   var cat  = detectVoiceCategory(text);
@@ -798,7 +798,7 @@ function playVoice(text) {
   console.log("voice:", file, "("+cat+")");
 
   // BGMを少し下げてボイス再生
-  if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.12;
+  if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.04;
 
   voiceAudio.src = file + ".mp3";
   voiceAudio.load();
