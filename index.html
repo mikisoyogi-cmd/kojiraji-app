@@ -728,7 +728,7 @@ var bgmAudio = null;
 function initBGM() {
   bgmAudio = document.getElementById("bgm");
   if (!bgmAudio) return;
-  bgmAudio.volume = 0.35; // 控えめな音量
+  bgmAudio.volume = 0.28; // 控えめな音量
 }
 
 function toggleBGM(e) {
@@ -805,11 +805,11 @@ function playVoice(text) {
   voiceAudio.play().then(function() {
     voiceAudio.onended = function() {
       // ボイス終了後BGMを元に戻す
-      if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.35;
+      if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.28;
     };
   }).catch(function(e) {
     console.log("voice err:", e);
-    if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.35;
+    if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.28;
   });
 }
 
