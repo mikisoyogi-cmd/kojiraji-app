@@ -938,6 +938,13 @@ function playVoice(text) {
     if (bgmAudio && bgmPlaying) {
       bgmAudio.play().catch(function(){});
     }
+
+    // AudioContext（ボイス用）を再開
+    if (voiceCtx && voiceCtx.state === "suspended") {
+      voiceCtx.resume().then(function(){
+        voiceCtxReady = true;
+      }).catch(function(){});
+    }
   });
 
   // iOS Safari：pageshow（BFキャッシュから復帰）にも対応
