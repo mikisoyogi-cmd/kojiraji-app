@@ -280,7 +280,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <script>
 
-// ====== 動画ランダム切り替え（オーバーラップクロスフェード） ======
+// ====== 動画ランダム切り替え（プリロード方式） ======
 (function() {
   var vA = document.getElementById("videoA");
   var vB = document.getElementById("videoB");
@@ -294,9 +294,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   var active = "A";
-  var fadeOverlap = 0.3; // 終了何秒前から次の動画をフェードイン開始
-  var fadeDuration = 300; // フェード時間（ms）
-  var scheduled = false;
+  var switching = false;
 
   function pickAnim() {
     var r = Math.random() * 100, acc = 0;
@@ -309,90 +307,85 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   function ext() { return isIOS ? ".mp4" : ".webm"; }
 
-  function setOpacity(v, val, duration) {
-    v.style.transition = duration > 0 ? ("opacity " + (duration/1000) + "s ease") : "none";
-    v.style.opacity = String(val);
-  }
-
-  function playVideo(v, name, cb) {
+  // 裏videoを透明のまま再生開始（プリロード）
+  function preloadBack(v, name) {
     v.src = name + ext();
     v.load();
-    v.play().then(cb).catch(function() {
+    v.style.opacity = "0";
+    v.style.transition = "none";
+    v.style.zIndex = "1";
+    v.play().catch(function() {
       v.src = name + ".mp4";
       v.load();
-      v.play().then(cb).catch(function(e){ console.log("err:", e); });
+      v.play().catch(function(){});
     });
   }
 
-  function scheduleNext(front) {
-    if (scheduled) return;
-    scheduled = true;
+  // 切り替え実行（opacityだけ変える）
+  function doSwitch() {
+    if (switching) return;
+    switching = true;
 
-    var back = (front === vA) ? vB : vA;
-    var name = pickAnim();
+    var front = active === "A" ? vA : vB;
+    var back  = active === "A" ? vB : vA;
 
-    // 次の動画を裏でロード・再生準備
-    back.src = name + ext();
-    back.load();
+    // 前後同時に0.3秒クロスフェード
+    back.style.zIndex = "2";
+    back.style.transition = "opacity 0.3s ease";
+    back.style.opacity = "1";
+    front.style.transition = "opacity 0.3s ease";
+    front.style.opacity = "0";
 
-    // 終了fadeOverlap秒前にフェード開始
-    function checkTime() {
-      if (!front.duration || front.paused) return;
-      var remaining = front.duration - front.currentTime;
-      if (remaining <= fadeOverlap) {
-        // フェード開始
-        back.style.zIndex = "2";
-        setOpacity(back, 0, 0); // 透明スタート
-        back.play().then(function() {
-          setOpacity(back, 1, fadeDuration);  // 次をフェードイン
-          setOpacity(front, 0, fadeDuration); // 前をフェードアウト
+    active = active === "A" ? "B" : "A";
 
-          setTimeout(function() {
-            front.pause();
-            front.removeAttribute("src");
-            front.style.zIndex = "1";
-            setOpacity(front, 0, 0);
-            active = (active === "A") ? "B" : "A";
-            scheduled = false;
-            // 新しいフロントのtimeupdateを監視
-            scheduleNext(back);
-          }, fadeDuration + 100);
-        }).catch(function() {
-          // WebM失敗時MP4で再試行
-          back.src = name + ".mp4";
-          back.load();
-          back.play().then(function() {
-            setOpacity(back, 0, 0);
-            setOpacity(back, 1, fadeDuration);
-            setOpacity(front, 0, fadeDuration);
-            setTimeout(function() {
-              front.pause();
-              front.removeAttribute("src");
-              front.style.zIndex = "1";
-              setOpacity(front, 0, 0);
-              active = (active === "A") ? "B" : "A";
-              scheduled = false;
-              scheduleNext(back);
-            }, fadeDuration + 100);
-          }).catch(function(e){ console.log("err:", e); scheduled = false; });
-        });
+    // フェード完了後に次をプリロード
+    setTimeout(function() {
+      front.style.zIndex = "1";
+      switching = false;
+      // 次の動画を裏でプリロード開始
+      preloadBack(front, pickAnim());
+      // 新しいフロントを監視
+      watchFront(back);
+    }, 350);
+  }
+
+  // フロントの残り時間を監視
+  function watchFront(v) {
+    function check() {
+      if (v !== (active === "A" ? vA : vB)) return; // フロントでなくなったら停止
+      if (!v.duration || v.paused) { requestAnimationFrame(check); return; }
+      var remaining = v.duration - v.currentTime;
+      if (remaining <= 0.3) {
+        doSwitch();
       } else {
-        requestAnimationFrame(checkTime);
+        requestAnimationFrame(check);
       }
     }
-    requestAnimationFrame(checkTime);
+    requestAnimationFrame(check);
   }
 
   window._startVideo = function() {
     var name = pickAnim();
-    vA.style.zIndex = "1";
-    setOpacity(vA, 0, 0);
-    playVideo(vA, name, function() {
-      setOpacity(vA, 1, 0);
-      active = "A";
-      scheduled = false;
-      scheduleNext(vA);
+    vA.src = name + ext();
+    vA.load();
+    vA.style.opacity = "0";
+    vA.style.transition = "none";
+    vA.style.zIndex = "2";
+    vA.play().catch(function() {
+      vA.src = name + ".mp4";
+      vA.load();
+      vA.play().catch(function(){});
     });
+    // 少し待ってからフェードイン
+    setTimeout(function() {
+      vA.style.transition = "none";
+      vA.style.opacity = "1";
+      active = "A";
+      switching = false;
+      // 裏にプリロード開始
+      preloadBack(vB, pickAnim());
+      watchFront(vA);
+    }, 100);
   };
 })();
 
