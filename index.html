@@ -280,7 +280,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <script>
 
-// ====== 動画ランダム切り替え（クロスフェード） ======
+// ====== 動画ランダム切り替え（オーバーラップクロスフェード） ======
 (function() {
   var vA = document.getElementById("videoA");
   var vB = document.getElementById("videoB");
@@ -294,6 +294,9 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   var active = "A";
+  var fadeOverlap = 1.2; // 終了何秒前から次の動画をフェードイン開始
+  var fadeDuration = 1000; // フェード時間（ms）
+  var scheduled = false;
 
   function pickAnim() {
     var r = Math.random() * 100, acc = 0;
@@ -306,6 +309,11 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   function ext() { return isIOS ? ".mp4" : ".webm"; }
 
+  function setOpacity(v, val, duration) {
+    v.style.transition = duration > 0 ? ("opacity " + (duration/1000) + "s ease") : "none";
+    v.style.opacity = String(val);
+  }
+
   function playVideo(v, name, cb) {
     v.src = name + ext();
     v.load();
@@ -316,37 +324,75 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     });
   }
 
-  function crossFade(name) {
-    var front = active === "A" ? vA : vB;
-    var back  = active === "A" ? vB : vA;
+  function scheduleNext(front) {
+    if (scheduled) return;
+    scheduled = true;
 
-    playVideo(back, name, function() {
-      // 裏videoを即座に前面へ（フェードなし）
-      back.style.transition = "none";
-      back.style.zIndex     = "2";
-      back.style.opacity    = "1";
-      // 表videoをゆっくりフェードアウトして消す
-      front.style.transition = "opacity 0.6s ease";
-      front.style.opacity    = "0";
-      front.style.zIndex     = "1";
-      active = active === "A" ? "B" : "A";
-      setTimeout(function() {
-        front.pause();
-        front.removeAttribute("src");
-        front.style.transition = "none";
-      }, 700);
-    });
+    var back = (front === vA) ? vB : vA;
+    var name = pickAnim();
+
+    // 次の動画を裏でロード・再生準備
+    back.src = name + ext();
+    back.load();
+
+    // 終了fadeOverlap秒前にフェード開始
+    function checkTime() {
+      if (!front.duration || front.paused) return;
+      var remaining = front.duration - front.currentTime;
+      if (remaining <= fadeOverlap) {
+        // フェード開始
+        back.style.zIndex = "2";
+        setOpacity(back, 0, 0); // 透明でスタート
+        back.play().then(function() {
+          // 次の動画フェードイン
+          setOpacity(back, 1, fadeDuration);
+          // 前の動画フェードアウト
+          setOpacity(front, 0, fadeDuration);
+
+          setTimeout(function() {
+            front.pause();
+            front.removeAttribute("src");
+            front.style.zIndex = "1";
+            setOpacity(front, 0, 0);
+            active = (active === "A") ? "B" : "A";
+            scheduled = false;
+            // 新しいフロントのtimeupdateを監視
+            scheduleNext(back);
+          }, fadeDuration + 100);
+        }).catch(function() {
+          // WebM失敗時MP4で再試行
+          back.src = name + ".mp4";
+          back.load();
+          back.play().then(function() {
+            setOpacity(back, 1, fadeDuration);
+            setOpacity(front, 0, fadeDuration);
+            setTimeout(function() {
+              front.pause();
+              front.removeAttribute("src");
+              front.style.zIndex = "1";
+              setOpacity(front, 0, 0);
+              active = (active === "A") ? "B" : "A";
+              scheduled = false;
+              scheduleNext(back);
+            }, fadeDuration + 100);
+          }).catch(function(e){ console.log("err:", e); scheduled = false; });
+        });
+      } else {
+        requestAnimationFrame(checkTime);
+      }
+    }
+    requestAnimationFrame(checkTime);
   }
 
-  function onEnded() { crossFade(pickAnim()); }
-  vA.addEventListener("ended", onEnded);
-  vB.addEventListener("ended", onEnded);
-
   window._startVideo = function() {
-    playVideo(vA, pickAnim(), function() {
-      vA.style.transition = "none";
-      vA.style.opacity    = "1";
-      vA.style.zIndex     = "1";
+    var name = pickAnim();
+    vA.style.zIndex = "1";
+    setOpacity(vA, 0, 0);
+    playVideo(vA, name, function() {
+      setOpacity(vA, 1, 400);
+      active = "A";
+      scheduled = false;
+      scheduleNext(vA);
     });
   };
 })();
