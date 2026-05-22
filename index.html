@@ -326,15 +326,29 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     return isIOS ? (name + ".mp4") : (name + ".webm");
   }
 
-  // 伸びアニメ用サウンド
-  var stretchSound = new Audio("stretch_sound.mp3");
-  stretchSound.volume = 0.9;
-
+  // 伸びアニメ用サウンド（Web Audio API経由で増幅）
   function playAnimSound(name) {
-    if (name === "anim_stretch") {
-      stretchSound.currentTime = 0;
-      stretchSound.play().catch(function(){});
+    if (name !== "anim_stretch") return;
+
+    // voiceCtxが初期化済みならWeb Audio APIで3倍増幅
+    if (voiceCtxReady && voiceCtx) {
+      if (voiceCtx.state === "suspended") voiceCtx.resume();
+      fetch("stretch_sound.mp3")
+        .then(function(r){ return r.arrayBuffer(); })
+        .then(function(buf){ return voiceCtx.decodeAudioData(buf); })
+        .then(function(decoded){
+          var src = voiceCtx.createBufferSource();
+          src.buffer = decoded;
+          src.connect(voiceGainNode);
+          src.start(0);
+        })
+        .catch(function(e){ console.log("stretch sound err:", e); });
+      return;
     }
+    // フォールバック：通常Audio
+    var a = new Audio("stretch_sound.mp3");
+    a.volume = 1.0;
+    a.play().catch(function(e){ console.log("stretch fallback err:", e); });
   }
 
   function playNext() {
