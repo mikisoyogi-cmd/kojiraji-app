@@ -166,80 +166,63 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 /* TOAST */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(8,16,36,.95);border:1px solid rgba(74,158,255,.3);border-radius:12px;padding:9px 16px;color:var(--soft);font-size:12px;z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 .toast.on{opacity:1}
+
+/* === 案A追加 === */
+.hero{height:calc(100dvh - 130px) !important;max-height:none !important;}
+.sw-area{padding-bottom:20px !important;}
+.qrow{display:none !important;}
+
+/* 案A: しっぽ */
+.sb{border-radius:4px 12px 12px 12px;position:relative;margin-top:14px}
+.sb::before{content:'';position:absolute;top:-12px;left:18px;border:6px solid transparent;border-bottom-color:rgba(74,158,255,.25)}
+.sb::after{content:'';position:absolute;top:-10px;left:19px;border:5px solid transparent;border-bottom-color:rgba(6,12,28,.9)}
 </style>
 </head>
 <body>
-
-<!-- ローディング -->
 <div id="loader">
   <div class="ld-ring">🎧</div>
   <div class="ld-title">KOJIRAJI ROOM</div>
   <div class="ld-wave"><span></span><span></span><span></span><span></span><span></span></div>
   <div class="ld-hint">— tap to enter —</div>
 </div>
-
 <div class="app">
-  <div class="hero" id="heroArea" onclick="onTap()">
-    <video id="videoA" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:1;transition:opacity 0.8s;cursor:pointer;" onclick="onTap()"></video>
-    <video id="videoB" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:2;opacity:0;transition:opacity 0.8s;cursor:pointer;" onclick="onTap()"></video>
-    <div class="hp-glow"></div>
-    <div class="hdr">
-      <div>
-        <div class="hdr-title">KOJIRAJI ROOM</div>
-        <div class="hdr-date" id="dDate"></div>
-        <div class="hdr-time" id="dTime"></div>
+  <!-- HOME -->
+  <div class="pan on" id="p-home" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="hero" id="heroArea" onclick="onTap()">
+      <video id="videoA" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:1;cursor:pointer;" onclick="onTap()"></video>
+      <video id="videoB" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:2;opacity:0;cursor:pointer;" onclick="onTap()"></video>
+      <div class="hp-glow"></div>
+      <div class="hdr">
+        <div>
+          <div class="hdr-title">KOJIRAJI ROOM</div>
+          <div class="hdr-date" id="dDate"></div>
+          <div class="hdr-time" id="dTime"></div>
+        </div>
+        <div class="hdr-right"><div class="hdr-icon">🔔<div class="ndot"></div></div></div>
       </div>
-      <div class="hdr-right"><div class="hdr-icon">🔔<div class="ndot"></div></div></div>
-    </div>
-    <!-- セリフエリア（hero内・キャラに重なる） -->
-    <div class="sw-area" id="swArea">
-      <div class="sb" id="sb"><p class="st" id="st"></p></div>
-      <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
-        <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
-        <button class="ci-btn" onclick="sendMsg()">→</button>
+      <div class="sw-area" id="swArea">
+        <div class="sb" id="sb"><p class="st" id="st"></p></div>
+        <div class="ci-row" id="ciRow" style="display:none" onclick="event.stopPropagation()">
+          <input class="ci-input" id="ciInput" placeholder="返事する..." maxlength="100" inputmode="text" enterkeyhint="send" autocomplete="off" autocorrect="off">
+          <button class="ci-btn" onclick="sendMsg()">→</button>
+        </div>
+        <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
       </div>
-      <div class="th"><div class="tw"><span></span><span></span><span></span><span></span><span></span></div>tap to talk</div>
     </div>
-  </div><!-- /hero -->
-
-  <div class="qrow">
-    <button class="qb" onclick="go('todo')"><span class="qi">📋</span><span class="ql">週間TODO</span></button>
-    <button class="qb" onclick="go('report')"><span class="qi">📝</span><span class="ql">簡易日報</span></button>
-    <button class="qb" onclick="go('sales')"><span class="qi">🏢</span><span class="ql">月間訪問</span></button>
-    <button class="qb" onclick="go('sales')"><span class="qi">📈</span><span class="ql">月間売上</span></button>
-    <button class="qb" onclick="go('sales')"><span class="qi">👑</span><span class="ql">年間売上</span></button>
   </div>
-
-  <div class="sc">
-    <div class="pan on" id="p-home">
-      <div class="card" onclick="go('todo')">
-        <div class="pw"><svg class="pr" width="48" height="48" viewBox="0 0 48 48"><circle class="pbg" cx="24" cy="24" r="20"/><circle class="pf" id="pf" cx="24" cy="24" r="20" stroke-dasharray="125.6" stroke-dashoffset="125.6"/></svg><span class="pp" id="pp">0%</span></div>
-        <div class="cb"><div class="cl">今週のサマリー</div><div style="font-size:11px;color:var(--dim)">TODO完了</div><div style="font-size:26px;font-weight:200"><span id="hComp">0</span><span style="font-size:12px;color:var(--dim)"> / <span id="hTot">0</span>件</span></div></div>
-        <div style="font-size:28px;opacity:.2">🗓</div><div class="ca">›</div>
-      </div>
-      <div class="card" onclick="go('sales')">
-        <div class="ci">🏢</div><div class="cb"><div class="cl">今月の訪問件数</div><div><span class="cv" id="hVisits">0</span><span class="cu">件</span></div></div>
-        <div class="mg" id="mgV"></div><div class="ca">›</div>
-      </div>
-      <div class="card" onclick="go('sales')">
-        <div class="ci">¥</div><div class="cb"><div class="cl">今月の売上</div><div><span style="font-size:14px;color:var(--dim)">¥</span><span class="cv" id="hSales">0</span></div></div>
-        <svg class="lc" id="lcM" viewBox="0 0 60 36" preserveAspectRatio="none"></svg><div class="ca">›</div>
-      </div>
-      <div class="card" onclick="go('sales')">
-        <div class="ci">👑</div><div class="cb"><div class="cl">今年の売上</div><div><span style="font-size:14px;color:var(--dim)">¥</span><span class="cv" id="hYearly">0</span></div></div>
-        <svg class="lc" id="lcY" viewBox="0 0 60 36" preserveAspectRatio="none"></svg><div class="ca">›</div>
-      </div>
-    </div>
-
-    <div class="pan" id="p-todo">
+  <!-- TODO -->
+  <div class="pan" id="p-todo">
+    <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">週間TODO</div>
         <div class="ti-row"><input class="ti" id="tIn" placeholder="タスクを追加..."><button class="tadd" onclick="addT()">＋</button></div>
         <div class="tlist" id="tList"></div>
       </div>
     </div>
-
-    <div class="pan" id="p-report">
+  </div>
+  <!-- 日報 -->
+  <div class="pan" id="p-report">
+    <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">今日の日報 — <span id="rDate"></span></div>
         <textarea class="rta" id="rText" placeholder="今日やったこと、気づき、明日のこと…"></textarea>
@@ -249,8 +232,10 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
         <div class="clab">過去の日報</div><div id="rHist"></div>
       </div>
     </div>
-
-    <div class="pan" id="p-sales">
+  </div>
+  <!-- 実績 -->
+  <div class="pan" id="p-sales">
+    <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">月間 訪問件数</div>
         <div class="bv"><span id="vVal">0</span><span style="font-size:12px;color:var(--dim);margin-left:2px">件</span></div>
@@ -271,7 +256,6 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     </div>
   </div>
 </div>
-
 <div class="nav">
   <button class="nb on" id="n-home" onclick="go('home')"><span class="ni">🏠</span><span class="nl">HOME</span></button>
   <button class="nb" id="n-todo" onclick="go('todo')"><span class="ni">📋</span><span class="nl">TODO</span></button>
@@ -279,8 +263,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   <button class="nb" id="n-sales" onclick="go('sales')"><span class="ni">📊</span><span class="nl">実績</span></button>
 </div>
 <div class="toast" id="toast"></div>
-
 <script>
+
 
 // ====== 動画切り替え（シンプル確実版） ======
 (function() {
@@ -704,6 +688,7 @@ function toast(msg){ var t=document.getElementById("toast"); t.textContent=msg; 
 
 // ====== Init ======
 renderT(); renderR(); renderS();
+
 </script>
 </body>
 </html>
