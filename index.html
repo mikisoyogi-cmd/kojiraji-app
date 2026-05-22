@@ -539,12 +539,28 @@ function showReply(text) {
   sb.classList.add("show");
   hero.classList.add("expanded");
   document.getElementById("ciRow").style.display = "flex";
+
+  // 入力中はタイマーをセットしない
   clearTimeout(bTimer);
-  bTimer = setTimeout(function(){
-    sb.classList.remove("show");
-    document.getElementById("ciRow").style.display = "none";
-    hero.classList.remove("expanded");
-  }, 15000);
+  function startHideTimer() {
+    clearTimeout(bTimer);
+    bTimer = setTimeout(function(){
+      if (inputFocused) {
+        // まだ入力中なら再度待機
+        startHideTimer();
+        return;
+      }
+      sb.classList.remove("show");
+      document.getElementById("ciRow").style.display = "none";
+      hero.classList.remove("expanded");
+    }, 30000);
+  }
+  // フォーカス中でなければタイマー開始
+  if (!inputFocused) {
+    startHideTimer();
+  }
+  // フォーカスが外れたときにタイマー開始するよう登録
+  document.getElementById("ciInput")._startHideTimer = startHideTimer;
 }
 
 function onTap() {
@@ -634,16 +650,10 @@ document.getElementById("ciInput").addEventListener("blur", function(){
     // まだciInputにフォーカスがあれば何もしない
     if (document.activeElement === document.getElementById("ciInput")) return;
     inputFocused = false;
-    // フォーカスが外れたら30秒後に消す（長めに）
-    var sb = document.getElementById("sb");
-    if (sb.classList.contains("show")) {
-      clearTimeout(bTimer);
-      bTimer = setTimeout(function(){
-        if (!inputFocused) {
-          sb.classList.remove("show");
-          document.getElementById("ciRow").style.display = "none";
-        }
-      }, 30000);
+    // フォーカスが外れたらタイマー開始
+    var ciInput = document.getElementById("ciInput");
+    if (ciInput._startHideTimer) {
+      ciInput._startHideTimer();
     }
   }, 300);
 });
