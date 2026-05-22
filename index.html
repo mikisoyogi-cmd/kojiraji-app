@@ -41,7 +41,6 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 /* HERO */
 .hero{position:relative;height:48vh;max-height:480px;min-height:280px;flex-shrink:0;overflow:hidden;background:#060a14;cursor:pointer;transition:height .3s ease}
 .hero.expanded{height:52vh;max-height:520px}
-.hero-bg{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;filter:brightness(.78) saturate(1.12);position:absolute;top:0;left:0;z-index:0}
 #heroVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.82) saturate(1.1);z-index:1}
 .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(6,10,20,.7) 75%,#060a14 100%);pointer-events:none;z-index:2}
 .hp-glow{position:absolute;top:8%;right:28%;width:18%;padding-top:18%;border-radius:50%;background:radial-gradient(circle,rgba(74,158,255,.55) 0%,transparent 70%);animation:hpG 3s ease-in-out infinite;pointer-events:none;z-index:3}
@@ -169,9 +168,8 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 </div>
 
 <div class="app">
-  <div class="hero" id="heroArea">
-    <img class="hero-bg" src="kojiraji_bg.png" alt="" onclick="onTap()">
-    <video id="heroVideo" loop muted playsinline onclick="onTap()"></video>
+  <div class="hero" id="heroArea" onclick="onTap()">
+    <video id="heroVideo" loop muted playsinline onclick="onTap()" style="cursor:pointer"></video>
     <div class="hp-glow"></div>
     <div class="hdr">
       <div>
