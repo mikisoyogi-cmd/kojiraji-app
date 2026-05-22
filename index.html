@@ -913,6 +913,47 @@ function playVoice(text) {
   a.onended = restoreBGM;
 }
 
+// ====== バックグラウンド復帰時の動画再開 ======
+(function() {
+  document.addEventListener("visibilitychange", function() {
+    var vA = document.getElementById("videoA");
+    var vB = document.getElementById("videoB");
+
+    if (document.visibilityState === "hidden") {
+      // バックグラウンド：BGMを止める
+      if (bgmAudio && bgmPlaying) bgmAudio.pause();
+      return;
+    }
+
+    // フォアグラウンド復帰：動画再開
+    if (vA && vB) {
+      [vA, vB].forEach(function(v) {
+        if (parseFloat(v.style.opacity || 1) > 0.5 && v.src && v.paused) {
+          v.play().catch(function(){});
+        }
+      });
+    }
+
+    // BGMも再開
+    if (bgmAudio && bgmPlaying) {
+      bgmAudio.play().catch(function(){});
+    }
+  });
+
+  // iOS Safari：pageshow（BFキャッシュから復帰）にも対応
+  window.addEventListener("pageshow", function(e) {
+    if (!e.persisted) return;
+    var vA = document.getElementById("videoA");
+    var vB = document.getElementById("videoB");
+    if (!vA || !vB) return;
+    [vA, vB].forEach(function(v) {
+      if (parseFloat(v.style.opacity || 1) > 0.5 && v.src && v.paused) {
+        v.play().catch(function(){});
+      }
+    });
+  });
+})();
+
 // ====== Init ======
 renderT(); renderR(); renderS();
 
