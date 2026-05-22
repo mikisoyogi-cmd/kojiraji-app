@@ -529,6 +529,8 @@ function askAI(userMsg, cb) {
 }
 
 function showReply(text) {
+  // ボイス再生（AI台詞の文脈で選択）
+  playVoice(text);
   var sb = document.getElementById("sb");
   var st = document.getElementById("st");
   var hero = document.getElementById("heroArea");
@@ -754,6 +756,60 @@ function startBGM() {
     document.getElementById("bgmBtn").style.opacity = "1";
   }).catch(function(){
     // 自動再生ブロック時は手動ボタンで対応
+  });
+}
+
+// ====== ボイス再生 ======
+var voiceMap = {
+  // カテゴリ: [ファイル名リスト]
+  praise:   ["voice_iine","voice_ganbatteru","voice_susunderu"],   // 褒める
+  agree:    ["voice_soudane","voice_watashimo","voice_wakaru","voice_un"], // 同意・共感
+  comfort:  ["voice_aserazu","voice_munashi","voice_sokka"],        // 励ます・慰め
+  question: ["voice_doushitano","voice_kyohadousu","voice_doudarou"], // 質問
+  casual:   ["voice_fufu","voice_un","voice_sokka"],                // 相槌
+  night:    ["voice_madaokiteru"],                                  // 深夜
+  greet:    ["voice_okaeri"],                                       // 挨拶
+};
+
+// AI台詞からカテゴリを判定
+function detectVoiceCategory(text) {
+  if (!text) return "casual";
+  // キーワードベースで判定
+  if (/まだ|深夜|夜|起き/.test(text))                      return "night";
+  if (/おかえり|また来/.test(text))                         return "greet";
+  if (/すごい|えらい|いいね|進んでる|積み上|ちゃんと/.test(text)) return "praise";
+  if (/焦|無理|ゆっくり|大丈夫|休/.test(text))             return "comfort";
+  if (/そうだね|わかる|私も|だよね/.test(text))             return "agree";
+  if (/どう|どうす|何|する？|かな？|みない？/.test(text))   return "question";
+  return "casual";
+}
+
+function pickVoice(category) {
+  var list = voiceMap[category] || voiceMap["casual"];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+var voiceAudio = new Audio();
+voiceAudio.volume = 0.9;
+
+function playVoice(text) {
+  var cat  = detectVoiceCategory(text);
+  var file = pickVoice(cat);
+  console.log("voice:", file, "("+cat+")");
+
+  // BGMを少し下げてボイス再生
+  if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.12;
+
+  voiceAudio.src = file + ".mp3";
+  voiceAudio.load();
+  voiceAudio.play().then(function() {
+    voiceAudio.onended = function() {
+      // ボイス終了後BGMを元に戻す
+      if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.35;
+    };
+  }).catch(function(e) {
+    console.log("voice err:", e);
+    if (bgmAudio && bgmPlaying) bgmAudio.volume = 0.35;
   });
 }
 
