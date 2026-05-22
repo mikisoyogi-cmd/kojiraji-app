@@ -270,13 +270,23 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">月間 訪問件数</div>
         <div class="bv"><span id="vVal">0</span><span style="font-size:12px;color:var(--dim);margin-left:2px">件</span></div>
-        <div class="mrow"><input class="min" id="vIn" type="number" placeholder="件数を追加"><button class="bsm" onclick="addV()">追加</button></div>
+        <div class="mrow">
+          <input class="min" id="vIn" type="number" placeholder="件数">
+          <button class="bsm" onclick="addV()">追加</button>
+          <button class="bsm" onclick="setV()" style="background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:rgba(255,180,80,.8)">修正</button>
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px">追加：今の数字に足す　修正：入力値に上書き</div>
         <div class="bc" id="vChart"></div>
       </div>
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">月間 売上</div>
         <div class="bv">¥<span id="msVal">0</span></div>
-        <div class="mrow"><input class="min" id="msIn" type="number" placeholder="金額 (円)"><button class="bsm" onclick="addMS()">追加</button></div>
+        <div class="mrow">
+          <input class="min" id="msIn" type="number" placeholder="金額 (円)">
+          <button class="bsm" onclick="addMS()">追加</button>
+          <button class="bsm" onclick="setMS()" style="background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:rgba(255,180,80,.8)">修正</button>
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px">追加：今の数字に足す　修正：入力値に上書き</div>
       </div>
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
         <div class="clab">年間 売上</div>
@@ -709,7 +719,9 @@ var SD = JSON.parse(localStorage.getItem(YK) || "{}");
 function getM(){ if (!SD[MK]) SD[MK]={visits:0,sales:0}; return SD[MK]; }
 function saveSD(){ localStorage.setItem(YK, JSON.stringify(SD)); }
 function addV(){ var v=parseInt(document.getElementById("vIn").value)||0; if(v<=0)return; getM().visits+=v; saveSD(); renderS(); document.getElementById("vIn").value=""; toast(v+"件 追加"); }
+function setV(){ var v=parseInt(document.getElementById("vIn").value); if(isNaN(v)||v<0)return; getM().visits=v; saveSD(); renderS(); document.getElementById("vIn").value=""; toast("訪問件数を "+v+"件 に修正しました"); }
 function addMS(){ var v=parseInt(document.getElementById("msIn").value)||0; if(v<=0)return; getM().sales+=v; saveSD(); renderS(); document.getElementById("msIn").value=""; toast("¥"+v.toLocaleString()+" 追加"); }
+function setMS(){ var v=parseInt(document.getElementById("msIn").value); if(isNaN(v)||v<0)return; getM().sales=v; saveSD(); renderS(); document.getElementById("msIn").value=""; toast("売上を ¥"+v.toLocaleString()+" に修正しました"); }
 function months(n){ var a=[]; for(var i=n-1;i>=0;i--){ var d=new Date(YN.getFullYear(),YN.getMonth()-i,1); a.push(d.getFullYear()+"_"+(d.getMonth()+1)); } return a; }
 function renderS() {
   var m=getM();
