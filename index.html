@@ -280,7 +280,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 <script>
 
-// ====== 動画ランダム切り替え（プリロード方式） ======
+// ====== 動画切り替え（シンプル確実版） ======
 (function() {
   var vA = document.getElementById("videoA");
   var vB = document.getElementById("videoB");
@@ -294,7 +294,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   var active = "A";
-  var switching = false;
+  var FADE = 300; // フェード時間ms（黒が出るなら増やす）
 
   function pickAnim() {
     var r = Math.random() * 100, acc = 0;
@@ -305,87 +305,76 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     return anims[0].name;
   }
 
-  function ext() { return isIOS ? ".mp4" : ".webm"; }
+  function src(name) {
+    return isIOS ? (name + ".mp4") : (name + ".webm");
+  }
 
-  // 裏videoを透明のまま再生開始（プリロード）
-  function preloadBack(v, name) {
-    v.src = name + ext();
-    v.load();
-    v.style.opacity = "0";
-    v.style.transition = "none";
-    v.style.zIndex = "1";
-    v.play().catch(function() {
-      v.src = name + ".mp4";
-      v.load();
-      v.play().catch(function(){});
+  function playNext() {
+    var front = active === "A" ? vA : vB;
+    var back  = active === "A" ? vB : vA;
+    var name  = pickAnim();
+
+    // 裏videoをセット
+    back.src = src(name);
+    back.load();
+    back.style.transition = "none";
+    back.style.opacity = "0";
+    back.style.zIndex  = "1";
+
+    back.play().then(function() {
+      // 再生確認できたらクロスフェード
+      back.style.zIndex = "2";
+      // 同時にフェード
+      requestAnimationFrame(function() {
+        back.style.transition  = "opacity " + (FADE/1000) + "s ease";
+        front.style.transition = "opacity " + (FADE/1000) + "s ease";
+        back.style.opacity  = "1";
+        front.style.opacity = "0";
+      });
+
+      setTimeout(function() {
+        front.pause();
+        front.src = "";
+        front.style.zIndex = "1";
+        active = active === "A" ? "B" : "A";
+      }, FADE + 50);
+
+    }).catch(function() {
+      // WebM失敗→MP4で再試行
+      back.src = name + ".mp4";
+      back.load();
+      back.play().then(function() {
+        back.style.zIndex = "2";
+        requestAnimationFrame(function() {
+          back.style.transition  = "opacity " + (FADE/1000) + "s ease";
+          front.style.transition = "opacity " + (FADE/1000) + "s ease";
+          back.style.opacity  = "1";
+          front.style.opacity = "0";
+        });
+        setTimeout(function() {
+          front.pause();
+          front.src = "";
+          front.style.zIndex = "1";
+          active = active === "A" ? "B" : "A";
+        }, FADE + 50);
+      }).catch(function(e){ console.log("play err:", e); });
     });
   }
 
-  // 切り替え実行（opacityだけ変える）
-  function doSwitch() {
-    if (switching) return;
-    switching = true;
-
-    var front = active === "A" ? vA : vB;
-    var back  = active === "A" ? vB : vA;
-
-    // 前後同時に0.3秒クロスフェード
-    back.style.zIndex = "2";
-    back.style.transition = "opacity 0.3s ease";
-    back.style.opacity = "1";
-    front.style.transition = "opacity 0.3s ease";
-    front.style.opacity = "0";
-
-    active = active === "A" ? "B" : "A";
-
-    // フェード完了後に次をプリロード
-    setTimeout(function() {
-      front.style.zIndex = "1";
-      switching = false;
-      // 次の動画を裏でプリロード開始
-      preloadBack(front, pickAnim());
-      // 新しいフロントを監視
-      watchFront(back);
-    }, 350);
-  }
-
-  // フロントの残り時間を監視
-  function watchFront(v) {
-    function check() {
-      if (v !== (active === "A" ? vA : vB)) return; // フロントでなくなったら停止
-      if (!v.duration || v.paused) { requestAnimationFrame(check); return; }
-      var remaining = v.duration - v.currentTime;
-      if (remaining <= 0.3) {
-        doSwitch();
-      } else {
-        requestAnimationFrame(check);
-      }
-    }
-    requestAnimationFrame(check);
-  }
+  vA.addEventListener("ended", playNext);
+  vB.addEventListener("ended", playNext);
 
   window._startVideo = function() {
     var name = pickAnim();
-    vA.src = name + ext();
+    vA.src = src(name);
     vA.load();
-    vA.style.opacity = "0";
-    vA.style.transition = "none";
-    vA.style.zIndex = "2";
+    vA.style.opacity = "1";
+    vA.style.zIndex  = "2";
     vA.play().catch(function() {
       vA.src = name + ".mp4";
       vA.load();
       vA.play().catch(function(){});
     });
-    // 少し待ってからフェードイン
-    setTimeout(function() {
-      vA.style.transition = "none";
-      vA.style.opacity = "1";
-      active = "A";
-      switching = false;
-      // 裏にプリロード開始
-      preloadBack(vB, pickAnim());
-      watchFront(vA);
-    }, 100);
   };
 })();
 
