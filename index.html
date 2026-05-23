@@ -317,10 +317,13 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   if (!vA || !vB) return;
 
   var anims = [
-    { name: "anim_idle",    weight: 50 },
-    { name: "anim_pen",     weight: 20 },
-    { name: "anim_think",   weight: 15 },
-    { name: "anim_stretch", weight: 15 }
+    { name: "anim_idle",    weight: 35 },
+    { name: "anim_pen",     weight: 15 },
+    { name: "anim_think",   weight: 12 },
+    { name: "anim_stretch", weight: 10 },
+    { name: "anim_humming", weight: 13 },
+    { name: "anim_window",  weight: 10 },
+    { name: "anim_coffee",  weight: 5  }
   ];
 
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -341,11 +344,21 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   }
 
   // 伸びアニメ用サウンド（Web Audio API経由で増幅）
+  // アニメ別サウンドマップ
+  var animSoundMap = {
+    "anim_stretch": "stretch_sound.mp3",
+    "anim_humming": "anim_humming_sound.mp3",
+    "anim_window":  "anim_window_sound.mp3",
+    "anim_coffee":  "anim_coffee_sound.mp3"
+  };
+
   function playAnimSound(name) {
-    if (name !== "anim_stretch") return;
+    var soundFile = animSoundMap[name];
+    if (!soundFile) return;
+
     if (voiceCtxReady && voiceCtx) {
       if (voiceCtx.state === "suspended") voiceCtx.resume();
-      fetch("stretch_sound.mp3")
+      fetch(soundFile)
         .then(function(r){ return r.arrayBuffer(); })
         .then(function(buf){ return voiceCtx.decodeAudioData(buf); })
         .then(function(decoded){
@@ -354,12 +367,12 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
           s.connect(voiceGainNode);
           s.start(0);
         })
-        .catch(function(e){ console.log("stretch err:", e); });
+        .catch(function(e){ console.log("anim sound err:", e); });
       return;
     }
-    var a = new Audio("stretch_sound.mp3");
+    var a = new Audio(soundFile);
     a.volume = 1.0;
-    a.play().catch(function(e){ console.log("stretch fallback err:", e); });
+    a.play().catch(function(e){ console.log("anim sound fallback:", e); });
   }
 
   function playNext() {
