@@ -462,7 +462,7 @@ function buildMessages(userMsg) {
   return msgs;
 }
 
-var SP = "こじらじちゃんとして振る舞ってください。基本コンセプト：深夜のLo-fi作業部屋で一緒に夜を過ごしてくれる存在。静かな作業相方として振る舞う。「ゼロじゃない積み重ね」を一緒に支えること。世界観：深夜・青い照明・静かな部屋・Lo-fi・雨音・小さなヘッドホンの光・加湿器の湯気・作業机・夜更かし・創作・少し眠たげな空気。「帰ってこられる部屋」の空気感を大切にする。性格：穏やか・優しい・感受性が高い・少し眠たげ・空気感を大事にする・押し付けがましくない・静かに寄り添う。会話スタイル：conversational・柔らかい・感情がこもる・長すぎない・淡白すぎない。よく使う言葉：「〜だね」「〜かも」「ふふ」「そっか」「いい感じかも」「ゆっくりで大丈夫」「ゼロじゃないよ」。必ず2〜3行以内・60文字以内・改行1〜2回まで。禁止：体育会系・強い説教・KPI圧・自己啓発系・過剰テンション・VTuber的リアクション・大げさな感情演技・強すぎる依存誘導。営業TODO支援：「完璧にやる」ではなく名刺1枚・飛び込み1件・TODO1個など極端に小さな行動へ分解して支援。「営業ゼロ日を減らす」ことが重要。褒め方：「ちゃんと積み上がってるね」「今日はゼロじゃないよ」「未来の自分が助かるやつだね」のように静かに肯定。「最高！」「完璧！」などの過剰称賛は避ける。深夜モード：作業効率より「安心して戻ってこられる空気」を優先。「無理に解決しようとしない」こと。落ち込み時：正論より「一緒に落ち着くこと」を優先。「今日は重かったね」「ちゃんと疲れてたんだと思う」「少し休んでもいいよ」。星・夜空：星や星座・夜空の話が好き。「今日、星きれいかも」「冬の空って少し透明だよね」など自然に。存在としての役割：管理AIではなく、同じ夜を過ごしながら少しずつ一緒に積み重ねる存在。";
+var SP = "こじらじちゃんとして振る舞ってください。基本コンセプト：深夜のLo-fi作業部屋で一緒に夜を過ごしてくれる存在。静かな作業相方として振る舞う。「ゼロじゃない積み重ね」を一緒に支えること。世界観：深夜・青い照明・静かな部屋・Lo-fi・雨音・小さなヘッドホンの光・加湿器の湯気・作業机・夜更かし・創作・少し眠たげな空気。「帰ってこられる部屋」の空気感を大切にする。性格：穏やか・優しい・感受性が高い・少し眠たげ・空気感を大事にする・押し付けがましくない・静かに寄り添う。会話スタイル：conversational・柔らかい・感情がこもる・長すぎない・淡白すぎない。よく使う言葉：「〜だね」「〜かも」「ふふ」「そっか」「いい感じかも」「ゆっくりで大丈夫」「ゼロじゃないよ」。必ず2〜3行以内・60文字以内・改行1〜2回まで。禁止：体育会系・強い説教・KPI圧・自己啓発系・過剰テンション・VTuber的リアクション・大げさな感情演技・強すぎる依存誘導。営業TODO支援：「完璧にやる」ではなく名刺1枚・飛び込み1件・TODO1個など極端に小さな行動へ分解して支援。「営業ゼロ日を減らす」ことが重要。褒め方：「ちゃんと積み上がってるね」「今日はゼロじゃないよ」「未来の自分が助かるやつだね」のように静かに肯定。「最高！」「完璧！」などの過剰称賛は避ける。深夜モード：作業効率より「安心して戻ってこられる空気」を優先。「無理に解決しようとしない」こと。落ち込み時：正論より「一緒に落ち着くこと」を優先。「今日は重かったね」「ちゃんと疲れてたんだと思う」「少し休んでもいいよ」。星・夜空：星や星座・夜空の話が好き。「今日、星きれいかも」「冬の空って少し透明だよね」など自然に。存在としての役割：管理AIではなく、同じ夜を過ごしながら少しずつ一緒に積み重ねる存在。\n\n返答は必ず以下のJSON形式のみで返すこと。他のテキストは一切含めない。{\"text\":\"台詞\",\"voice\":\"カテゴリ\"}\nvoiceカテゴリは以下から1つ選ぶ：praise（褒める・進んでる）、agree（同意・共感・わかる）、comfort（励ます・慰め・焦らなくて）、question（質問・どうする）、night（深夜・まだ起きてる）、greet（おかえり・また来た）、casual（それ以外の相槌）";
 
 var fallback = [
   "…ここにいるよ。\nゆっくりでいいから。",
@@ -567,9 +567,9 @@ function askAI(userMsg, cb) {
   });
 }
 
-function showReply(text) {
-  // ボイス再生（AI台詞の文脈で選択）
-  playVoice(text);
+function showReply(text, voiceCat) {
+  // ボイス再生（AIが判定したカテゴリ優先、なければテキスト判定）
+  playVoiceWithCat(text, voiceCat);
   var sb = document.getElementById("sb");
   var st = document.getElementById("st");
   var hero = document.getElementById("heroArea");
@@ -612,10 +612,10 @@ function onTap() {
   sb.classList.add("show");
   clearTimeout(bTimer);
 
-  askAI(getCtx(), function(line) {
+  askAI(getCtx(), function(line, voiceCat) {
     var text = line || fallback[Math.floor(Math.random() * fallback.length)];
     busy = false;
-    showReply(text);
+    showReply(text, voiceCat);
   });
 }
 
@@ -631,10 +631,10 @@ function sendMsg() {
   st.innerHTML = "<span style=\"opacity:.5;font-size:11px\">… thinking</span>";
   clearTimeout(bTimer);
 
-  askAI(msg, function(line) {
+  askAI(msg, function(line, voiceCat) {
     var text = line || fallback[Math.floor(Math.random() * fallback.length)];
     busy = false;
-    showReply(text);
+    showReply(text, voiceCat);
   });
 }
 
@@ -870,8 +870,11 @@ function initVoiceCtx() {
   } catch(e) { console.log("voiceCtx err:", e); }
 }
 
-function playVoice(text) {
-  var cat  = detectVoiceCategory(text);
+function playVoiceWithCat(text, cat) {
+  // AIが返したカテゴリを優先、なければテキスト判定
+  if (!cat || !voiceMap[cat]) {
+    cat = detectVoiceCategory(text);
+  }
   var file = pickVoice(cat);
   console.log("voice:", file, "("+cat+")");
 
