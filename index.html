@@ -554,16 +554,45 @@ function askAI(userMsg, cb) {
   })
   .then(function(r) { return r.json(); })
   .then(function(d) {
-    var txt = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-    if (txt) {
-      addHistory("user", userMsg);
-      addHistory("assistant", txt);
+    var raw = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    if (!raw) { cb(null, null); return; }
+
+    var text = null, voiceCat = null;
+    try {
+      // コードブロックを除去
+      var clean = raw.replace(/```json|```/g, "").trim();
+      // {…}部分を抽出してパース
+      var m = clean.match(/\{[\s\S]*\}/);
+      if (m) {
+        var parsed = JSON.parse(m[0]);
+        text = parsed.text || null;
+        voiceCat = parsed.voice || null;
+      } else {
+        text = clean;
+      }
+    } catch(e) {
+      text = raw;
     }
-    cb(txt || null);
+
+    // textがまだJSON形式になっている場合の保険
+    if (text && text.trim().charAt(0) === "{") {
+      try {
+        var p2 = JSON.parse(text);
+        if (p2.text) { text = p2.text; voiceCat = voiceCat || p2.voice; }
+      } catch(e2) {
+        text = raw; // 失敗したらrawをそのまま
+      }
+    }
+
+    if (text) {
+      addHistory("user", userMsg);
+      addHistory("assistant", text);
+    }
+    cb(text || null, voiceCat || null);
   })
   .catch(function(e) {
     console.log("AI err:", e);
-    cb(null);
+    cb(null, null);
   });
 }
 
