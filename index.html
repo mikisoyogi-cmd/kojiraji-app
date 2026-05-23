@@ -330,13 +330,28 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
   var active = "A";
   var FADE = 300; // フェード時間ms（黒が出るなら増やす）
 
+  var lastAnim = "";
+
   function pickAnim() {
-    var r = Math.random() * 100, acc = 0;
-    for (var i = 0; i < anims.length; i++) {
-      acc += anims[i].weight;
-      if (r < acc) return anims[i].name;
+    // 待機以外は連続しないようにリトライ（最大5回）
+    for (var attempt = 0; attempt < 5; attempt++) {
+      var r = Math.random() * 100, acc = 0;
+      for (var i = 0; i < anims.length; i++) {
+        acc += anims[i].weight;
+        if (r < acc) {
+          var name = anims[i].name;
+          // 待機(idle)は連続OK、それ以外は前回と違うものを選ぶ
+          if (name === "anim_idle" || name !== lastAnim) {
+            lastAnim = name;
+            return name;
+          }
+          break; // 同じだったらリトライ
+        }
+      }
     }
-    return anims[0].name;
+    // リトライ上限に達したらidleを返す
+    lastAnim = "anim_idle";
+    return "anim_idle";
   }
 
   function src(name) {
