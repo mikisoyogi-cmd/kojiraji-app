@@ -343,6 +343,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
           // 待機(idle)は連続OK、それ以外は前回と違うものを選ぶ
           if (name === "anim_idle" || name !== lastAnim) {
             lastAnim = name;
+            currentAnimName = name;
             return name;
           }
           break; // 同じだったらリトライ
@@ -351,6 +352,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     }
     // リトライ上限に達したらidleを返す
     lastAnim = "anim_idle";
+    currentAnimName = "anim_idle";
     return "anim_idle";
   }
 
@@ -483,7 +485,9 @@ function addHistory(role, content) {
 
 function buildMessages(userMsg) {
   checkDateReset();
-  var msgs = [{role: "system", content: SP}];
+  // システムプロンプトに現在の行動を動的に追加
+  var dynamicSP = SP + "\n\n現在のこじらじちゃんの行動: " + getCurrentAnimDesc() + "。この行動を自覚した上で会話してください。";
+  var msgs = [{role: "system", content: dynamicSP}];
   // 過去の会話履歴
   chatHistory.forEach(function(m){ msgs.push(m); });
   // 今回のメッセージ
@@ -972,6 +976,22 @@ function playVoiceWithCat(text, cat) {
   a.volume = 1.0;
   a.play().catch(function(e){ console.log("voice err:", e); restoreBGM(); });
   a.onended = restoreBGM;
+}
+
+// ====== アニメーション状態管理 ======
+var currentAnimName = "anim_idle";
+var animDescMap = {
+  "anim_idle":    "机に向かって静かに作業している",
+  "anim_pen":     "ペンでメモをトントンしながら考えている",
+  "anim_think":   "頬に手を当てて何かを考えている",
+  "anim_stretch": "大きく伸びをしてリフレッシュしている",
+  "anim_humming": "鼻歌を歌いながらリラックスしている",
+  "anim_window":  "窓の外の夜景をぼんやり眺めている",
+  "anim_coffee":  "コーヒーをゆっくり飲んでいる"
+};
+
+function getCurrentAnimDesc() {
+  return animDescMap[currentAnimName] || "静かに過ごしている";
 }
 
 // ====== バックグラウンド復帰時の動画再開 ======
