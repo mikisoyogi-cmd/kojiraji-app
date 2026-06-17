@@ -206,6 +206,52 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .focus-action{font-size:11px;color:var(--text-soft);line-height:1.6}
 .focus-action-label{color:var(--blue);opacity:.8}
 
+/* プロジェクト一覧 */
+.proj-card{
+  background:rgba(74,158,255,.03);
+  border:1px solid rgba(74,158,255,.12);
+  border-radius:12px;
+  overflow:hidden;
+}
+.proj-head{
+  display:flex;align-items:center;gap:8px;
+  padding:11px 12px;cursor:pointer;
+}
+.proj-title{flex:1;font-size:12.5px;color:var(--text)}
+.proj-progress{font-size:10px;color:var(--blue);opacity:.8;white-space:nowrap}
+.proj-arrow{font-size:10px;color:var(--text-dim);transition:transform .2s}
+.proj-card.open .proj-arrow{transform:rotate(90deg)}
+.proj-steps{display:none;flex-direction:column;gap:0;padding:0 12px 10px}
+.proj-card.open .proj-steps{display:flex}
+.proj-step{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 0;font-size:11.5px;color:var(--text-soft);
+}
+.proj-step.dn{color:var(--text-dim);text-decoration:line-through;opacity:.6}
+.proj-step-ck{
+  width:16px;height:16px;min-width:16px;border-radius:50%;
+  border:1.5px solid rgba(74,158,255,.4);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.proj-step-ck.on{background:rgba(74,158,255,.5);border-color:rgba(74,158,255,.6)}
+.proj-del{
+  font-size:13px;color:var(--text-dim);opacity:.5;
+  padding:2px 4px;cursor:pointer;
+}
+.proj-del:active{opacity:.9}
+
+/* 今日の3つピック表示（プロジェクト名付き） */
+.pick-task{
+  background:rgba(74,158,255,.04);
+  border:1px solid rgba(74,158,255,.15);
+  border-radius:12px;
+  padding:11px 13px;
+  display:flex;gap:9px;align-items:flex-start;
+}
+.pick-proj-name{font-size:10px;color:var(--blue);opacity:.75;margin-bottom:2px}
+.pick-step-text{font-size:12.5px;color:var(--text);line-height:1.5}
+.pick-step-text.dn{color:var(--text-dim);text-decoration:line-through;opacity:.6}
+
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(8,16,36,.95);border:1px solid rgba(74,158,255,.3);border-radius:12px;padding:9px 16px;color:var(--soft);font-size:12px;z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 .toast.on{opacity:1}
 
@@ -294,54 +340,72 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
       <!-- 趣味セクション -->
       <div class="focus-section on" id="fs-hobby">
+
         <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
-          <div class="clab">棚卸し（趣味）</div>
+          <div class="clab">棚卸し</div>
           <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px;line-height:1.6">
-            やりたいこと、気になってること、自由に書き出してみよう。
+            やりたいこと、気になってることを書き出してみよう。<br>こじらじちゃんがステップに分けて整理するよ。
           </div>
-          <textarea class="rta" id="focusDump_hobby" style="min-height:90px" placeholder="例：ブログ書きたい、新しい企画考えたい、部屋の片付け…"></textarea>
-          <button class="bsave" id="focusBtn_hobby" onclick="generateFocus('hobby')" style="margin-top:12px">今日の3つを決める</button>
+          <textarea class="rta" id="focusDump_hobby" style="min-height:80px" placeholder="例：ブログ書きたい、新しい企画考えたい…"></textarea>
+          <button class="bsave" id="focusAddBtn_hobby" onclick="addProject('hobby')" style="margin-top:10px">追加する</button>
         </div>
 
-        <div id="focusResult_hobby" style="display:none">
-          <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
-            <div class="clab">今日やること（趣味）</div>
-            <div id="focusTasks_hobby" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="focusLoading_hobby" style="display:none;text-align:center;padding:16px;color:var(--text-dim);font-size:12px">考えています…</div>
+
+        <!-- 今日の3つ -->
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">今日の3つ</div>
+          <div id="pickEmpty_hobby" style="font-size:11px;color:var(--text-dim);padding:6px 0">まずはプロジェクトを追加してみよう</div>
+          <div id="pickWrap_hobby" style="display:none">
+            <div id="pickTasks_hobby" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+            <p id="pickComment_hobby" style="font-size:13px;line-height:1.7;color:var(--text-soft);margin-bottom:10px"></p>
           </div>
-          <div class="card" style="flex-direction:column;align-items:stretch;cursor:default;background:rgba(74,158,255,.06)">
-            <div class="clab">こじらじちゃんから</div>
-            <p id="focusComment_hobby" style="font-size:13px;line-height:1.8;color:var(--text-soft)"></p>
-          </div>
-          <button class="bsave" onclick="resetFocus('hobby')" style="opacity:.7">やり直す</button>
+          <button class="bsave" id="pickBtn_hobby" onclick="pickToday('hobby')" style="display:none">今日の3つを選ぶ</button>
+          <button class="bsave" id="pickRedoBtn_hobby" onclick="pickToday('hobby')" style="display:none;opacity:.7">選び直す</button>
+          <div id="pickLoading_hobby" style="display:none;text-align:center;padding:10px;color:var(--text-dim);font-size:12px">選んでいます…</div>
         </div>
 
-        <div id="focusLoading_hobby" style="display:none;text-align:center;padding:20px;color:var(--text-dim);font-size:12px">考えています…</div>
+        <!-- プロジェクト一覧 -->
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">プロジェクト一覧</div>
+          <div id="projectList_hobby" style="display:flex;flex-direction:column;gap:8px"></div>
+          <div id="projectEmpty_hobby" style="font-size:11px;color:var(--text-dim);padding:6px 0">まだプロジェクトがないよ</div>
+        </div>
+
       </div>
 
       <!-- 仕事セクション -->
       <div class="focus-section" id="fs-work">
+
         <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
-          <div class="clab">棚卸し（仕事）</div>
+          <div class="clab">棚卸し</div>
           <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px;line-height:1.6">
-            仕事で抱えてること、やらなきゃいけないことを書き出してみよう。
+            仕事で抱えてることを書き出してみよう。<br>こじらじちゃんがステップに分けて整理するよ。
           </div>
-          <textarea class="rta" id="focusDump_work" style="min-height:90px" placeholder="例：見積書の作成、資料整理、来週の打ち合わせ準備…"></textarea>
-          <button class="bsave" id="focusBtn_work" onclick="generateFocus('work')" style="margin-top:12px">今日の3つを決める</button>
+          <textarea class="rta" id="focusDump_work" style="min-height:80px" placeholder="例：見積書の作成、来週の打ち合わせ準備…"></textarea>
+          <button class="bsave" id="focusAddBtn_work" onclick="addProject('work')" style="margin-top:10px">追加する</button>
         </div>
 
-        <div id="focusResult_work" style="display:none">
-          <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
-            <div class="clab">今日やること（仕事）</div>
-            <div id="focusTasks_work" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="focusLoading_work" style="display:none;text-align:center;padding:16px;color:var(--text-dim);font-size:12px">考えています…</div>
+
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">今日の3つ</div>
+          <div id="pickEmpty_work" style="font-size:11px;color:var(--text-dim);padding:6px 0">まずはプロジェクトを追加してみよう</div>
+          <div id="pickWrap_work" style="display:none">
+            <div id="pickTasks_work" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+            <p id="pickComment_work" style="font-size:13px;line-height:1.7;color:var(--text-soft);margin-bottom:10px"></p>
           </div>
-          <div class="card" style="flex-direction:column;align-items:stretch;cursor:default;background:rgba(74,158,255,.06)">
-            <div class="clab">こじらじちゃんから</div>
-            <p id="focusComment_work" style="font-size:13px;line-height:1.8;color:var(--text-soft)"></p>
-          </div>
-          <button class="bsave" onclick="resetFocus('work')" style="opacity:.7">やり直す</button>
+          <button class="bsave" id="pickBtn_work" onclick="pickToday('work')" style="display:none">今日の3つを選ぶ</button>
+          <button class="bsave" id="pickRedoBtn_work" onclick="pickToday('work')" style="display:none;opacity:.7">選び直す</button>
+          <div id="pickLoading_work" style="display:none;text-align:center;padding:10px;color:var(--text-dim);font-size:12px">選んでいます…</div>
         </div>
 
-        <div id="focusLoading_work" style="display:none;text-align:center;padding:20px;color:var(--text-dim);font-size:12px">考えています…</div>
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">プロジェクト一覧</div>
+          <div id="projectList_work" style="display:flex;flex-direction:column;gap:8px"></div>
+          <div id="projectEmpty_work" style="font-size:11px;color:var(--text-dim);padding:6px 0">まだプロジェクトがないよ</div>
+        </div>
+
       </div>
 
     </div>
@@ -349,11 +413,28 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
   <div class="pan" id="p-todo">
     <div class="sc" style="padding-top:16px">
-      <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
-        <div class="clab">週間TODO</div>
-        <div class="ti-row"><input class="ti" id="tIn" placeholder="タスクを追加..."><button class="tadd" onclick="addT()">＋</button></div>
-        <div class="tlist" id="tList"></div>
+
+      <div class="focus-tabs">
+        <button class="focus-tab on" id="tt-hobby" onclick="switchTodoMode('hobby')">🎨 趣味</button>
+        <button class="focus-tab" id="tt-work" onclick="switchTodoMode('work')">💼 仕事</button>
       </div>
+
+      <div class="focus-section on" id="ts-hobby">
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">週間TODO（趣味）</div>
+          <div class="ti-row"><input class="ti" id="tIn_hobby" placeholder="タスクを追加..."><button class="tadd" onclick="addT('hobby')">＋</button></div>
+          <div class="tlist" id="tList_hobby"></div>
+        </div>
+      </div>
+
+      <div class="focus-section" id="ts-work">
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">週間TODO（仕事）</div>
+          <div class="ti-row"><input class="ti" id="tIn_work" placeholder="タスクを追加..."><button class="tadd" onclick="addT('work')">＋</button></div>
+          <div class="tlist" id="tList_work"></div>
+        </div>
+      </div>
+
     </div>
   </div>
   <!-- 日報 -->
@@ -673,9 +754,9 @@ function getCtx() {
   var n = new Date();
   var days = ["日","月","火","水","木","金","土"];
   var t = "現在時刻: " + n.getHours() + "時（" + days[n.getDay()] + "曜日）";
-  var todos = JSON.parse(localStorage.getItem("kj_todos") || "[]");
-  var done = todos.filter(function(x){ return x.done; }).length;
-  var td = todos.length > 0 ? "TODO: " + todos.length + "件中" + done + "件完了" : "TODO: まだ未登録";
+  var ctxTodos = (JSON.parse(localStorage.getItem("kj_todos_hobby") || "[]")).concat(JSON.parse(localStorage.getItem("kj_todos_work") || "[]"));
+  var done = ctxTodos.filter(function(x){ return x.done; }).length;
+  var td = ctxTodos.length > 0 ? "TODO: " + ctxTodos.length + "件中" + done + "件完了" : "TODO: まだ未登録";
   var yr = n.getFullYear();
   var mk = yr + "_" + (n.getMonth()+1);
   var sd = JSON.parse(localStorage.getItem("kj_year_" + yr) || "{}");
@@ -815,28 +896,68 @@ function go(name) {
   upHome();
 }
 
-// ====== TODO ======
-var todos = JSON.parse(localStorage.getItem("kj_todos") || "[]");
-function saveTodos(){ localStorage.setItem("kj_todos", JSON.stringify(todos)); }
-function renderT() {
-  var l = document.getElementById("tList"); l.innerHTML = "";
-  todos.forEach(function(t, i) {
+// ====== TODO（趣味/仕事 分離） ======
+// 旧バージョンの統合TODOをマイグレーション
+(function migrateTodos() {
+  var legacy = localStorage.getItem("kj_todos");
+  if (legacy && localStorage.getItem("kj_todos_hobby") === null && localStorage.getItem("kj_todos_work") === null) {
+    try {
+      var old = JSON.parse(legacy);
+      var hobby = [], work = [];
+      old.forEach(function(t) {
+        if (t.text && t.text.indexOf("💼") === 0) work.push(t);
+        else hobby.push(t);
+      });
+      localStorage.setItem("kj_todos_hobby", JSON.stringify(hobby));
+      localStorage.setItem("kj_todos_work", JSON.stringify(work));
+    } catch(e) { console.log("todo migrate err:", e); }
+  }
+})();
+
+var todosHobby = JSON.parse(localStorage.getItem("kj_todos_hobby") || "[]");
+var todosWork  = JSON.parse(localStorage.getItem("kj_todos_work")  || "[]");
+var todoMode = "hobby";
+
+function getTodoArr(mode) { return mode === "work" ? todosWork : todosHobby; }
+
+function switchTodoMode(mode) {
+  todoMode = mode;
+  document.getElementById("tt-hobby").classList.toggle("on", mode === "hobby");
+  document.getElementById("tt-work").classList.toggle("on", mode === "work");
+  document.getElementById("ts-hobby").classList.toggle("on", mode === "hobby");
+  document.getElementById("ts-work").classList.toggle("on", mode === "work");
+}
+
+function saveTodos(mode){
+  localStorage.setItem(mode === "work" ? "kj_todos_work" : "kj_todos_hobby", JSON.stringify(getTodoArr(mode)));
+}
+
+function renderT(mode) {
+  var arr = getTodoArr(mode);
+  var l = document.getElementById(mode === "work" ? "tList_work" : "tList_hobby");
+  l.innerHTML = "";
+  arr.forEach(function(t, i) {
     var el = document.createElement("div");
     el.className = "titem" + (t.done ? " dn" : "");
-    el.innerHTML = "<button class=\"tck\" onclick=\"togT(" + i + ")\"></button><span class=\"ttx\">" + t.text + "</span><button class=\"tdl\" onclick=\"delT(" + i + ")\">×</button>";
+    el.innerHTML = "<button class=\"tck\" onclick=\"togT('" + mode + "'," + i + ")\"></button><span class=\"ttx\">" + t.text + "</span><button class=\"tdl\" onclick=\"delT('" + mode + "'," + i + ")\">×</button>";
     l.appendChild(el);
   });
   upHome();
 }
-function addT() {
-  var inp = document.getElementById("tIn"), txt = inp.value.trim();
+
+function addT(mode) {
+  var inp = document.getElementById(mode === "work" ? "tIn_work" : "tIn_hobby");
+  var txt = inp.value.trim();
   if (!txt) return;
-  todos.push({text: txt, done: false}); saveTodos(); renderT(); inp.value = "";
+  getTodoArr(mode).push({text: txt, done: false});
+  saveTodos(mode); renderT(mode); inp.value = "";
   toast("タスクを追加しました");
 }
-function togT(i){ todos[i].done = !todos[i].done; saveTodos(); renderT(); }
-function delT(i){ todos.splice(i,1); saveTodos(); renderT(); }
-document.getElementById("tIn").addEventListener("keydown", function(e){ if(e.key==="Enter") addT(); });
+function togT(mode, i){ getTodoArr(mode)[i].done = !getTodoArr(mode)[i].done; saveTodos(mode); renderT(mode); }
+function delT(mode, i){ getTodoArr(mode).splice(i,1); saveTodos(mode); renderT(mode); }
+
+document.getElementById("tIn_hobby").addEventListener("keydown", function(e){ if(e.key==="Enter") addT("hobby"); });
+document.getElementById("tIn_work").addEventListener("keydown", function(e){ if(e.key==="Enter") addT("work"); });
 var inputFocused = false;
 var focusBlurTimer = null;
 
@@ -908,21 +1029,15 @@ function barChart(id,field){ var el=document.getElementById(id); if(!el)return; 
 function lineChart(id,field,cnt){ var svg=document.getElementById(id); if(!svg)return; svg.innerHTML=""; var ms=months(cnt),vs=ms.map(function(k){ return SD[k]?SD[k][field]||0:0; }),mx=Math.max.apply(null,vs.concat([1])); if(!vs.some(function(v){ return v>0; }))return; var pts=vs.map(function(v,i){ return (i/(cnt-1)*60)+","+(36-v/mx*32); }).join(" "); var p=document.createElementNS("http://www.w3.org/2000/svg","polyline"); p.setAttribute("points",pts); p.setAttribute("fill","none"); p.setAttribute("stroke","rgba(74,158,255,.7)"); p.setAttribute("stroke-width","1.5"); p.setAttribute("stroke-linecap","round"); svg.appendChild(p); vs.forEach(function(v,i){ if(!v)return; var c=document.createElementNS("http://www.w3.org/2000/svg","circle"); c.setAttribute("cx",i/(cnt-1)*60); c.setAttribute("cy",36-v/mx*32); c.setAttribute("r","2"); c.setAttribute("fill","rgba(74,158,255,.9)"); svg.appendChild(c); }); }
 
 function upHome() {
-  var done=todos.filter(function(t){ return t.done; }).length, tot=todos.length;
+  var allTodos = todosHobby.concat(todosWork);
+  var done=allTodos.filter(function(t){ return t.done; }).length, tot=allTodos.length;
   document.getElementById("hComp").textContent=done;
   document.getElementById("hTot").textContent=tot;
-  var pct=tot?done/tot*100:0;
-  document.getElementById("pp").textContent=Math.round(pct)+"%";
-  document.getElementById("pf").style.strokeDashoffset=125.6-pct/100*125.6;
   var m=getM();
   document.getElementById("hVisits").textContent=m.visits.toLocaleString();
   document.getElementById("hSales").textContent=m.sales.toLocaleString();
   var yr=0; Object.values(SD).forEach(function(v){ yr+=(v.sales||0); });
   document.getElementById("hYearly").textContent=yr.toLocaleString();
-  var mg=document.getElementById("mgV"); mg.innerHTML="";
-  var ms=months(6),vs=ms.map(function(k){ return SD[k]?SD[k].visits||0:0; }),mx=Math.max.apply(null,vs.concat([1]));
-  ms.forEach(function(k,i){ var b=document.createElement("div"); b.className="mgb"; b.style.height=Math.max(vs[i]/mx*36,3)+"px"; if(k===MK){ b.style.background="rgba(74,158,255,.6)"; b.style.boxShadow="0 0 5px rgba(74,158,255,.4)"; } mg.appendChild(b); });
-  lineChart("lcM","sales",6); lineChart("lcY","sales",12);
 }
 
 // ====== Toast ======
@@ -1148,8 +1263,9 @@ function getCurrentAnimDesc() {
   });
 })();
 
-// ====== 今日の3つ（伴走マネージャー） ======
-var COMPANION_SP = "あなたは「伴走マネージャー」として、ユーザーのタスク整理を手伝います。\n\n前提：ユーザーはタスク管理が苦手な特性を持つ（やりたいことが多い／興味あることほど理想が高い／大きいタスクに圧倒される／人との関わりで動きやすい／一人での継続が苦手）。「やりたいこと渋滞」を解消しながら前進をサポートすることが目的。\n\n処理フロー：\n1. ユーザーが書き出した内容を棚卸しする\n2. 「今やる／今は保留／いつかやりたい／やらなくていい可能性」に分類する\n3. 「今やる」から本当に重要なものを最大3つ選定する\n4. その3つを15分以内で着手できる行動まで分解する（完了ではなく着手がゴール）\n\n伴走方針：叱らない・説教しない・自己嫌悪を強化しない・未完了を責めない・再開しやすさを最優先する。\n\n応援コメントは、こじらじちゃんという深夜の作業相方の口調で書く。柔らかく、優しく、押し付けない。「〜だね」「〜かも」「ふふ」など自然な温度感。2行以内。\n\n必ず以下のJSON形式のみで返答する。他のテキストは含めない：\n{\"tasks\":[{\"title\":\"タスク1のタイトル\",\"action\":\"15分でできる具体的な行動\"},{\"title\":\"タスク2\",\"action\":\"...\"},{\"title\":\"タスク3\",\"action\":\"...\"}],\"comment\":\"応援コメント\",\"voice\":\"カテゴリ名\"}\n\nvoiceカテゴリは以下から1つ選ぶ：praise、agree、comfort、question、casual";
+// ====== 今日の3つ（伴走マネージャー：プロジェクト方式） ======
+var DECOMPOSE_SP = "あなたは「伴走マネージャー」です。ユーザーが書き出した「やりたいこと」を整理します。\n\n前提：ユーザーはタスク管理が苦手な特性を持つ（やりたいことが多い／興味あることほど理想が高い／大きいタスクに圧倒される／一人での継続が苦手）。\n\n処理：\n1. 書き出された内容から、独立した「やりたいことプロジェクト」を1つ以上識別する\n2. 各プロジェクトを、着手しやすい小さなステップに分解する（3〜6ステップ程度が目安。完了ではなく着手しやすさを重視）\n3. ステップは具体的な行動として書く（例：「テーマを3つ書き出す」「目次を考える」など）\n\n応援コメントは、こじらじちゃんという深夜の作業相方の口調で書く。柔らかく優しく、押し付けない。1〜2行。\n\n必ず以下のJSON形式のみで返答する。他のテキストは含めない：\n{\"projects\":[{\"title\":\"プロジェクト名\",\"steps\":[\"ステップ1\",\"ステップ2\",\"ステップ3\"]}],\"comment\":\"応援コメント\",\"voice\":\"カテゴリ名\"}\n\nvoiceカテゴリは以下から1つ選ぶ：praise、agree、comfort、question、casual";
+var SELECT_SP = "あなたは「伴走マネージャー」です。ユーザーが持つ複数の「やりたいことプロジェクト」の、まだ完了していないステップ一覧が渡されます。\n\n処理：\n1. 全プロジェクトの未完了ステップの中から、今日やるべき最大3つを選ぶ\n2. 選ぶ基準：着手しやすそうなもの、プロジェクトが偏らないように分散させる、気分や負荷のバランスを考える\n3. 既存のステップ文言をそのまま使う（書き換えない）\n\n応援コメントは、こじらじちゃんという深夜の作業相方の口調で書く。柔らかく優しく、押し付けない。叱らない・責めない。1〜2行。\n\n必ず以下のJSON形式のみで返答する。他のテキストは含めない：\n{\"picks\":[{\"project\":\"プロジェクト名\",\"step\":\"ステップ文言（元の文言と完全一致させる）\"}],\"comment\":\"応援コメント\",\"voice\":\"カテゴリ名\"}\n\nvoiceカテゴリは以下から1つ選ぶ：praise、agree、comfort、question、casual";
 var focusMode = "hobby";
 
 function switchFocusMode(mode) {
@@ -1160,138 +1276,276 @@ function switchFocusMode(mode) {
   document.getElementById("fs-work").classList.toggle("on", mode === "work");
 }
 
-function focusKey(mode) { return "kj_focus_" + mode; }
+// ---- プロジェクトデータ ----
+function projKey(mode) { return "kj_projects_" + mode; }
+function getProjects(mode) {
+  return JSON.parse(localStorage.getItem(projKey(mode)) || "[]");
+}
+function saveProjects(mode, arr) {
+  localStorage.setItem(projKey(mode), JSON.stringify(arr));
+}
+function uid() { return "id" + Date.now() + Math.floor(Math.random()*10000); }
 
-function loadFocusData(mode) {
+// ---- 今日のピックデータ（日付キー） ----
+function pickKey(mode) { return "kj_pick_" + mode; }
+function loadPickData(mode) {
   var today = new Date().toISOString().slice(0,10);
-  var saved = JSON.parse(localStorage.getItem(focusKey(mode)) || "null");
+  var saved = JSON.parse(localStorage.getItem(pickKey(mode)) || "null");
   if (saved && saved.date === today) return saved;
   return null;
 }
-
-function saveFocusData(mode, data) {
+function savePickData(mode, data) {
   var today = new Date().toISOString().slice(0,10);
-  localStorage.setItem(focusKey(mode), JSON.stringify({
-    date: today, tasks: data.tasks, comment: data.comment, voice: data.voice
-  }));
+  localStorage.setItem(pickKey(mode), JSON.stringify({date: today, picks: data.picks, comment: data.comment, voice: data.voice}));
 }
 
-function renderFocusResult(mode, data) {
-  var tasksEl = document.getElementById("focusTasks_" + mode);
-  tasksEl.innerHTML = "";
-  data.tasks.forEach(function(t, i) {
-    var el = document.createElement("div");
-    el.className = "focus-task";
-    el.innerHTML =
-      "<div class=\"focus-num\">" + (i+1) + "</div>" +
-      "<div style=\"flex:1\">" +
-        "<div class=\"focus-title\">" + t.title + "</div>" +
-        "<div class=\"focus-action\"><span class=\"focus-action-label\">15分アクション：</span>" + t.action + "</div>" +
-      "</div>";
-    tasksEl.appendChild(el);
-  });
-  document.getElementById("focusComment_" + mode).textContent = data.comment || "";
-  document.getElementById("focusResult_" + mode).style.display = "block";
-  document.querySelector("#fs-" + mode + " .card").style.display = "none";
-}
-
-function generateFocus(mode) {
+// ---- プロジェクト追加（棚卸し→分解） ----
+function addProject(mode) {
   var dump = document.getElementById("focusDump_" + mode).value.trim();
   if (!dump) { toast("まず書き出してみてね"); return; }
 
-  var btn = document.getElementById("focusBtn_" + mode);
+  var btn = document.getElementById("focusAddBtn_" + mode);
   btn.disabled = true;
   document.getElementById("focusLoading_" + mode).style.display = "block";
 
-  var modeNote = mode === "work"
-    ? "これは仕事の棚卸しです。仕事のタスクとして選定・分解してください。"
-    : "これは趣味の棚卸しです。仕事の話が混ざっていても趣味を優先してください。";
-
+  var modeNote = mode === "work" ? "これは仕事の棚卸しです。" : "これは趣味の棚卸しです。";
   var userMsg = "棚卸し内容：\n" + dump + "\n\n" + modeNote;
 
   fetch("/api/chat", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      messages: [
-        {role: "system", content: COMPANION_SP},
-        {role: "user", content: userMsg}
-      ]
-    })
+    body: JSON.stringify({ messages: [
+      {role: "system", content: DECOMPOSE_SP},
+      {role: "user", content: userMsg}
+    ]})
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
     var raw = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
     document.getElementById("focusLoading_" + mode).style.display = "none";
     btn.disabled = false;
-    if (!raw) { toast("うまく決められなかったみたい…もう一度試してね"); return; }
+    if (!raw) { toast("うまく整理できなかったみたい…もう一度試してね"); return; }
 
     var parsed;
     try {
       var clean = raw.replace(/```json|```/g, "").trim();
       var m = clean.match(/\{[\s\S]*\}/);
       parsed = JSON.parse(m ? m[0] : clean);
-    } catch(e) {
-      toast("うまく決められなかったみたい…もう一度試してね");
-      return;
-    }
-    if (!parsed.tasks || !parsed.tasks.length) {
-      toast("うまく決められなかったみたい…もう一度試してね");
-      return;
+    } catch(e) { toast("うまく整理できなかったみたい…もう一度試してね"); return; }
+
+    if (!parsed.projects || !parsed.projects.length) {
+      toast("うまく整理できなかったみたい…もう一度試してね"); return;
     }
 
-    saveFocusData(mode, parsed);
-    renderFocusResult(mode, parsed);
-
-    var tag = mode === "work" ? "💼 " : "🎯 ";
-    parsed.tasks.forEach(function(t) {
-      todos.push({ text: tag + t.title, done: false });
+    var projects = getProjects(mode);
+    parsed.projects.forEach(function(p) {
+      projects.push({
+        id: uid(),
+        title: p.title,
+        steps: (p.steps || []).map(function(s){ return {id: uid(), text: s, done: false}; })
+      });
     });
-    saveTodos();
-    renderT();
+    saveProjects(mode, projects);
+    renderProjects(mode);
+    updatePickButtonVisibility(mode);
+
+    document.getElementById("focusDump_" + mode).value = "";
+    toast("プロジェクトを追加したよ");
 
     if (parsed.comment) playVoiceWithCat(parsed.comment, parsed.voice);
   })
   .catch(function(e){
-    console.log("focus err:", e);
+    console.log("addProject err:", e);
     document.getElementById("focusLoading_" + mode).style.display = "none";
     btn.disabled = false;
     toast("通信エラーかも…もう一度試してね");
   });
 }
 
-function resetFocus(mode) {
-  localStorage.removeItem(focusKey(mode));
-  document.getElementById("focusResult_" + mode).style.display = "none";
-  document.querySelector("#fs-" + mode + " .card").style.display = "flex";
-  document.getElementById("focusDump_" + mode).value = "";
+// ---- プロジェクト一覧描画 ----
+function renderProjects(mode) {
+  var projects = getProjects(mode);
+  var listEl = document.getElementById("projectList_" + mode);
+  var emptyEl = document.getElementById("projectEmpty_" + mode);
+  listEl.innerHTML = "";
+
+  if (!projects.length) { emptyEl.style.display = "block"; return; }
+  emptyEl.style.display = "none";
+
+  projects.forEach(function(p) {
+    var done = p.steps.filter(function(s){ return s.done; }).length;
+    var tot = p.steps.length;
+    var card = document.createElement("div");
+    card.className = "proj-card";
+    card.id = "proj_" + p.id;
+
+    var head = document.createElement("div");
+    head.className = "proj-head";
+    head.onclick = function(){ card.classList.toggle("open"); };
+    head.innerHTML =
+      "<span class=\"proj-arrow\">▶</span>" +
+      "<span class=\"proj-title\">" + p.title + "</span>" +
+      "<span class=\"proj-progress\">" + done + "/" + tot + "</span>" +
+      "<span class=\"proj-del\" onclick=\"event.stopPropagation();delProject('" + mode + "','" + p.id + "')\">🗑</span>";
+    card.appendChild(head);
+
+    var stepsWrap = document.createElement("div");
+    stepsWrap.className = "proj-steps";
+    p.steps.forEach(function(s) {
+      var row = document.createElement("div");
+      row.className = "proj-step" + (s.done ? " dn" : "");
+      row.innerHTML =
+        "<span class=\"proj-step-ck" + (s.done ? " on" : "") + "\" onclick=\"toggleStep('" + mode + "','" + p.id + "','" + s.id + "')\"></span>" +
+        "<span>" + s.text + "</span>";
+      stepsWrap.appendChild(row);
+    });
+    card.appendChild(stepsWrap);
+    listEl.appendChild(card);
+  });
 }
 
-// 初期表示：両モードとも当日分があれば復元
+function delProject(mode, projId) {
+  var projects = getProjects(mode).filter(function(p){ return p.id !== projId; });
+  saveProjects(mode, projects);
+  renderProjects(mode);
+  updatePickButtonVisibility(mode);
+}
+
+function toggleStep(mode, projId, stepId) {
+  var projects = getProjects(mode);
+  var proj = projects.find(function(p){ return p.id === projId; });
+  if (!proj) return;
+  var step = proj.steps.find(function(s){ return s.id === stepId; });
+  if (!step) return;
+  step.done = !step.done;
+  saveProjects(mode, projects);
+  renderProjects(mode);
+  refreshPickDisplay(mode); // 今日の3つ側の表示も同期
+}
+
+// ---- 今日の3つ：未完了ステップの有無で表示切替 ----
+function hasUncheckedSteps(mode) {
+  var projects = getProjects(mode);
+  return projects.some(function(p){ return p.steps.some(function(s){ return !s.done; }); });
+}
+
+function updatePickButtonVisibility(mode) {
+  var existing = loadPickData(mode);
+  var has = hasUncheckedSteps(mode);
+  document.getElementById("pickBtn_" + mode).style.display = (has && !existing) ? "block" : "none";
+  document.getElementById("pickRedoBtn_" + mode).style.display = (has && existing) ? "block" : "none";
+  if (!has && !existing) document.getElementById("pickEmpty_" + mode).style.display = "block";
+}
+
+// ---- 今日の3つ：選定 ----
+function pickToday(mode) {
+  var projects = getProjects(mode);
+  var lines = [];
+  projects.forEach(function(p) {
+    p.steps.forEach(function(s) {
+      if (!s.done) lines.push("プロジェクト「" + p.title + "」のステップ：" + s.text);
+    });
+  });
+  if (!lines.length) { toast("未完了のステップがないよ"); return; }
+
+  document.getElementById("pickBtn_" + mode).style.display = "none";
+  document.getElementById("pickRedoBtn_" + mode).style.display = "none";
+  document.getElementById("pickLoading_" + mode).style.display = "block";
+
+  var userMsg = "未完了ステップ一覧：\n" + lines.join("\n");
+
+  fetch("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ messages: [
+      {role: "system", content: SELECT_SP},
+      {role: "user", content: userMsg}
+    ]})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var raw = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    document.getElementById("pickLoading_" + mode).style.display = "none";
+    if (!raw) { toast("うまく選べなかったみたい…もう一度試してね"); updatePickButtonVisibility(mode); return; }
+
+    var parsed;
+    try {
+      var clean = raw.replace(/```json|```/g, "").trim();
+      var m = clean.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(m ? m[0] : clean);
+    } catch(e) { toast("うまく選べなかったみたい…もう一度試してね"); updatePickButtonVisibility(mode); return; }
+
+    if (!parsed.picks || !parsed.picks.length) {
+      toast("うまく選べなかったみたい…もう一度試してね"); updatePickButtonVisibility(mode); return;
+    }
+
+    savePickData(mode, parsed);
+    refreshPickDisplay(mode);
+    if (parsed.comment) playVoiceWithCat(parsed.comment, parsed.voice);
+  })
+  .catch(function(e){
+    console.log("pickToday err:", e);
+    document.getElementById("pickLoading_" + mode).style.display = "none";
+    toast("通信エラーかも…もう一度試してね");
+    updatePickButtonVisibility(mode);
+  });
+}
+
+// ---- 今日の3つ：表示（プロジェクトの最新done状態と同期） ----
+function refreshPickDisplay(mode) {
+  var pickData = loadPickData(mode);
+  var emptyEl = document.getElementById("pickEmpty_" + mode);
+  var wrapEl  = document.getElementById("pickWrap_" + mode);
+
+  if (!pickData) {
+    emptyEl.style.display = hasUncheckedSteps(mode) ? "none" : "block";
+    wrapEl.style.display = "none";
+    updatePickButtonVisibility(mode);
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  wrapEl.style.display = "block";
+
+  var projects = getProjects(mode);
+  var tasksEl = document.getElementById("pickTasks_" + mode);
+  tasksEl.innerHTML = "";
+
+  pickData.picks.forEach(function(pk) {
+    var proj = projects.find(function(p){ return p.title === pk.project; });
+    var step = proj ? proj.steps.find(function(s){ return s.text === pk.step; }) : null;
+    var done = step ? step.done : false;
+
+    var el = document.createElement("div");
+    el.className = "pick-task";
+    var ckHtml = step
+      ? "<span class=\"proj-step-ck" + (done ? " on" : "") + "\" onclick=\"toggleStep('" + mode + "','" + proj.id + "','" + step.id + "')\"></span>"
+      : "<span class=\"proj-step-ck\"></span>";
+    el.innerHTML =
+      ckHtml +
+      "<div style=\"flex:1\">" +
+        "<div class=\"pick-proj-name\">" + pk.project + "</div>" +
+        "<div class=\"pick-step-text" + (done ? " dn" : "") + "\">" + pk.step + "</div>" +
+      "</div>";
+    tasksEl.appendChild(el);
+  });
+
+  document.getElementById("pickComment_" + mode).textContent = pickData.comment || "";
+  document.getElementById("pickBtn_" + mode).style.display = "none";
+  document.getElementById("pickRedoBtn_" + mode).style.display = "block";
+}
+
+// ---- 初期表示 ----
 (function() {
   ["hobby","work"].forEach(function(mode) {
-    var saved = loadFocusData(mode);
-    if (saved) {
-      setTimeout(function(){ renderFocusResult(mode, saved); }, 100);
-    }
+    renderProjects(mode);
+    refreshPickDisplay(mode);
   });
 })();
 
 // ====== Init ======
-renderT(); renderR(); renderS();
+renderT("hobby"); renderT("work"); renderR(); renderS();
 
-// 案B用ホーム更新
-function upHome() {
-  var done=todos.filter(function(t){return t.done;}).length, tot=todos.length;
-  var el;
-  el=document.getElementById("hComp"); if(el) el.textContent=done;
-  el=document.getElementById("hTot");  if(el) el.textContent=tot;
-  var m=getM();
-  el=document.getElementById("hVisits"); if(el) el.textContent=m.visits.toLocaleString();
-  el=document.getElementById("hSales");  if(el) el.textContent=m.sales.toLocaleString();
-  var yr=0; Object.values(SD).forEach(function(v){yr+=(v.sales||0);});
-  el=document.getElementById("hYearly"); if(el) el.textContent=yr.toLocaleString();
-}
 </script>
 </body>
 </html>
