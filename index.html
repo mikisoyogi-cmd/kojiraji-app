@@ -89,7 +89,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .ql{font-size:9px;color:var(--soft);white-space:nowrap;letter-spacing:.04em}
 
 /* SCROLL */
-.sc{flex:1;overflow-y:auto;padding:10px 14px calc(70px + var(--safe-bot));display:flex;flex-direction:column;gap:8px;background:#060a14}
+.sc{flex:1;min-height:0;overflow-y:auto;padding:10px 14px calc(70px + var(--safe-bot));display:flex;flex-direction:column;gap:8px;background:#060a14}
 .sc::-webkit-scrollbar{display:none}
 
 /* SCARD */
@@ -112,7 +112,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 
 /* PANELS */
 .pan{display:none;flex-direction:column;gap:8px}
-.pan.on{display:flex}
+.pan.on{display:flex;flex:1;min-height:0}
 .clab{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(74,158,255,.6);margin-bottom:10px}
 
 /* TODO */
