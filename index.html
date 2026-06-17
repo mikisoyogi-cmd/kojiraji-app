@@ -164,6 +164,30 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 .nl{font-size:9px;letter-spacing:.06em}
 
 /* TOAST */
+
+/* ===== 今日の3つ ===== */
+.focus-task{
+  background:rgba(74,158,255,.04);
+  border:1px solid rgba(74,158,255,.15);
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+.focus-num{
+  width:22px;height:22px;min-width:22px;
+  border-radius:50%;
+  background:rgba(74,158,255,.15);
+  border:1px solid rgba(74,158,255,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--blue);font-weight:400;
+  margin-top:1px;
+}
+.focus-title{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:4px}
+.focus-action{font-size:11px;color:var(--text-soft);line-height:1.6}
+.focus-action-label{color:var(--blue);opacity:.8}
+
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(8,16,36,.95);border:1px solid rgba(74,158,255,.3);border-radius:12px;padding:9px 16px;color:var(--soft);font-size:12px;z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 .toast.on{opacity:1}
 
@@ -242,6 +266,49 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
     </div>
   </div>
   <!-- TODO -->
+  <div class="pan" id="p-focus">
+    <div class="sc" style="padding-top:16px">
+
+      <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+        <div class="clab">棚卸し</div>
+        <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px;line-height:1.6">
+          抱えてること、やりたいことを自由に書き出してみよう。<br>
+          こじらじちゃんが今日やる3つを一緒に決めるよ。
+        </div>
+        <textarea class="rta" id="focusDump" style="min-height:90px" placeholder="例：ブログ書きたい、資料整理、新しい企画考えたい、部屋の片付け…"></textarea>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);cursor:pointer">
+            <input type="checkbox" id="focusWork" style="width:14px;height:14px;accent-color:var(--blue)">
+            仕事のタスクも含める
+          </label>
+        </div>
+
+        <button class="bsave" id="focusBtn" onclick="generateFocus()" style="margin-top:12px">今日の3つを決める</button>
+      </div>
+
+      <!-- 結果表示エリア -->
+      <div id="focusResult" style="display:none">
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+          <div class="clab">今日やること</div>
+          <div id="focusTasks" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div class="card" style="flex-direction:column;align-items:stretch;cursor:default;background:rgba(74,158,255,.06)">
+          <div class="clab">こじらじちゃんから</div>
+          <p id="focusComment" style="font-size:13px;line-height:1.8;color:var(--text-soft)"></p>
+        </div>
+
+        <button class="bsave" onclick="resetFocus()" style="opacity:.7">やり直す</button>
+      </div>
+
+      <div id="focusLoading" style="display:none;text-align:center;padding:20px;color:var(--text-dim);font-size:12px">
+        考えています…
+      </div>
+
+    </div>
+  </div>
+
   <div class="pan" id="p-todo">
     <div class="sc" style="padding-top:16px">
       <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
@@ -303,6 +370,7 @@ html,body{height:100%;background:#060a14;color:var(--text);font-family:'Noto San
 </div>
 <div class="nav">
   <button class="nb on" id="n-home" onclick="go('home')"><span class="ni">🏠</span><span class="nl">HOME</span></button>
+  <button class="nb" id="n-focus" onclick="go('focus')"><span class="ni">🎯</span><span class="nl">今日</span></button>
   <button class="nb" id="n-todo" onclick="go('todo')"><span class="ni">📋</span><span class="nl">TODO</span></button>
   <button class="nb" id="n-report" onclick="go('report')"><span class="ni">✏️</span><span class="nl">日報</span></button>
   <button class="nb" id="n-sales" onclick="go('sales')"><span class="ni">📊</span><span class="nl">実績</span></button>
@@ -702,7 +770,7 @@ function sendMsg() {
 
 // ====== タブ ======
 function go(name) {
-  ["home","todo","report","sales"].forEach(function(n) {
+  ["home","focus","todo","report","sales"].forEach(function(n) {
     document.getElementById("p-" + n).classList.toggle("on", n === name);
     document.getElementById("n-" + n).classList.toggle("on", n === name);
   });
@@ -1040,6 +1108,131 @@ function getCurrentAnimDesc() {
       }
     });
   });
+})();
+
+// ====== 今日の3つ（伴走マネージャー） ======
+var COMPANION_SP = "あなたは「伴走マネージャー」として、ユーザーのタスク整理を手伝います。\n\n前提：ユーザーはタスク管理が苦手な特性を持つ（やりたいことが多い／興味あることほど理想が高い／大きいタスクに圧倒される／人との関わりで動きやすい／一人での継続が苦手）。「やりたいこと渋滞」を解消しながら前進をサポートすることが目的。\n\n処理フロー：\n1. ユーザーが書き出した内容（案件・プロジェクト・やりたいこと）を棚卸しする\n2. 「今やる／今は保留／いつかやりたい／やらなくていい可能性」に分類する\n3. 「今やる」から本当に重要なものを最大3つ選定する\n4. その3つを15分以内で着手できる行動まで分解する（完了ではなく着手がゴール）\n\n伴走方針：叱らない・説教しない・自己嫌悪を強化しない・未完了を責めない・再開しやすさを最優先する。\n\n応援コメントは、こじらじちゃんという深夜の作業相方の口調で書く。柔らかく、優しく、押し付けない。「〜だね」「〜かも」「ふふ」など自然な温度感。2行以内。\n\n必ず以下のJSON形式のみで返答する。他のテキストは含めない：\n{\"tasks\":[{\"title\":\"タスク1のタイトル\",\"action\":\"15分でできる具体的な行動\"},{\"title\":\"タスク2\",\"action\":\"...\"},{\"title\":\"タスク3\",\"action\":\"...\"}],\"comment\":\"応援コメント\",\"voice\":\"カテゴリ名\"}\n\nvoiceカテゴリは以下から1つ選ぶ：praise、agree、comfort、question、casual";
+
+function loadFocusData() {
+  var today = new Date().toISOString().slice(0,10);
+  var saved = JSON.parse(localStorage.getItem("kj_focus") || "null");
+  if (saved && saved.date === today) {
+    return saved;
+  }
+  return null;
+}
+
+function saveFocusData(data) {
+  var today = new Date().toISOString().slice(0,10);
+  localStorage.setItem("kj_focus", JSON.stringify({
+    date: today,
+    tasks: data.tasks,
+    comment: data.comment,
+    voice: data.voice
+  }));
+}
+
+function renderFocusResult(data) {
+  var tasksEl = document.getElementById("focusTasks");
+  tasksEl.innerHTML = "";
+  data.tasks.forEach(function(t, i) {
+    var el = document.createElement("div");
+    el.className = "focus-task";
+    el.innerHTML =
+      "<div class=\"focus-num\">" + (i+1) + "</div>" +
+      "<div style=\"flex:1\">" +
+        "<div class=\"focus-title\">" + t.title + "</div>" +
+        "<div class=\"focus-action\"><span class=\"focus-action-label\">15分アクション：</span>" + t.action + "</div>" +
+      "</div>";
+    tasksEl.appendChild(el);
+  });
+  document.getElementById("focusComment").textContent = data.comment || "";
+  document.getElementById("focusResult").style.display = "block";
+  document.querySelector("#p-focus .card").style.display = "none"; // 棚卸し入力を隠す
+}
+
+function generateFocus() {
+  var dump = document.getElementById("focusDump").value.trim();
+  if (!dump) { toast("まず書き出してみてね"); return; }
+
+  var includeWork = document.getElementById("focusWork").checked;
+  var btn = document.getElementById("focusBtn");
+  btn.disabled = true;
+  document.getElementById("focusLoading").style.display = "block";
+
+  var userMsg = "棚卸し内容：\n" + dump +
+    (includeWork ? "\n\n仕事のタスクも含めて選んでください。" : "\n\n趣味側のタスクのみを優先して選んでください。仕事の話があれば後回しにしてください。");
+
+  fetch("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      messages: [
+        {role: "system", content: COMPANION_SP},
+        {role: "user", content: userMsg}
+      ]
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var raw = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    document.getElementById("focusLoading").style.display = "none";
+    btn.disabled = false;
+    if (!raw) { toast("うまく決められなかったみたい…もう一度試してね"); return; }
+
+    var parsed;
+    try {
+      var clean = raw.replace(/```json|```/g, "").trim();
+      var m = clean.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(m ? m[0] : clean);
+    } catch(e) {
+      toast("うまく決められなかったみたい…もう一度試してね");
+      return;
+    }
+
+    if (!parsed.tasks || !parsed.tasks.length) {
+      toast("うまく決められなかったみたい…もう一度試してね");
+      return;
+    }
+
+    saveFocusData(parsed);
+    renderFocusResult(parsed);
+
+    // 選ばれたタスクを既存のTODOリストにも自動追加
+    parsed.tasks.forEach(function(t) {
+      todos.push({ text: "🎯 " + t.title, done: false });
+    });
+    saveTodos();
+    renderT();
+
+    // ボイス再生（応援コメントの文脈で）
+    if (parsed.comment) {
+      playVoiceWithCat(parsed.comment, parsed.voice);
+    }
+  })
+  .catch(function(e){
+    console.log("focus err:", e);
+    document.getElementById("focusLoading").style.display = "none";
+    btn.disabled = false;
+    toast("通信エラーかも…もう一度試してね");
+  });
+}
+
+function resetFocus() {
+  localStorage.removeItem("kj_focus");
+  document.getElementById("focusResult").style.display = "none";
+  document.querySelector("#p-focus .card").style.display = "flex";
+  document.getElementById("focusDump").value = "";
+}
+
+// 初期表示：当日分のデータがあれば復元
+(function() {
+  var saved = loadFocusData();
+  if (saved) {
+    setTimeout(function() {
+      renderFocusResult(saved);
+    }, 100);
+  }
 })();
 
 // ====== Init ======
