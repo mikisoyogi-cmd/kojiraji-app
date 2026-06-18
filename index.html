@@ -885,32 +885,9 @@ function askAI(userMsg, cb) {
     var raw = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
     if (!raw) { cb(null, null); return; }
 
-    var text = null, voiceCat = null;
-    try {
-      // コードブロックを除去
-      var clean = raw.replace(/```json|```/g, "").trim();
-      // {…}部分を抽出してパース
-      var m = clean.match(/\{[\s\S]*\}/);
-      if (m) {
-        var parsed = JSON.parse(m[0]);
-        text = parsed.text || null;
-        voiceCat = parsed.voice || null;
-      } else {
-        text = clean;
-      }
-    } catch(e) {
-      text = raw;
-    }
-
-    // textがまだJSON形式になっている場合の保険
-    if (text && text.trim().charAt(0) === "{") {
-      try {
-        var p2 = JSON.parse(text);
-        if (p2.text) { text = p2.text; voiceCat = voiceCat || p2.voice; }
-      } catch(e2) {
-        text = raw; // 失敗したらrawをそのまま
-      }
-    }
+    var r2 = parseAIJson(raw);
+    var text = r2.text;
+    var voiceCat = r2.voice;
 
     if (text) {
       addHistory("user", userMsg);
@@ -1721,6 +1698,34 @@ function buildTalkMessages(userMsg) {
 
 var talkBusy = false;
 
+// ====== AI応答の頑丈なJSONパース（途中で切れても本文だけ取り出す） ======
+function parseAIJson(raw) {
+  if (!raw) return {text: null, voice: null};
+  var clean = raw.replace(/```json|```/g, "").trim();
+
+  // 1. 完全なJSONとして解析
+  var m = clean.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      var parsed = JSON.parse(m[0]);
+      if (parsed.text) return {text: parsed.text, voice: parsed.voice || null};
+    } catch(e) {}
+  }
+
+  // 2. max_tokensで途中で切れた場合："text":"..... の内容だけ抜き出す（閉じ括弧がなくてもOK）
+  var m2 = clean.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)/);
+  if (m2) {
+    var extracted = m2[1]
+      .replace(/\\n/g, "\n")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+    return {text: extracted, voice: null};
+  }
+
+  // 3. JSONらしき形が全く無い場合はそのまま返す
+  return {text: clean, voice: null};
+}
+
 function sendTalkMsg() {
   if (talkBusy) return;
   var inp = document.getElementById("talkInput");
@@ -1758,17 +1763,9 @@ function sendTalkMsg() {
 
     var text = null, voiceCat = null;
     if (raw) {
-      try {
-        var clean = raw.replace(/```json|```/g, "").trim();
-        var m = clean.match(/\{[\s\S]*\}/);
-        if (m) {
-          var parsed = JSON.parse(m[0]);
-          text = parsed.text || null;
-          voiceCat = parsed.voice || null;
-        } else {
-          text = clean;
-        }
-      } catch(e) { text = raw; }
+      var r = parseAIJson(raw);
+      text = r.text;
+      voiceCat = r.voice;
     }
     if (!text) text = "うまく話せなかったみたい…もう一度送ってみて";
 
