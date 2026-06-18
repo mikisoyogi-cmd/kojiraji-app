@@ -295,7 +295,7 @@ html,body{height:100%;height:var(--app-height,100%);background:#060a14;color:var
   <div class="ld-hint">— tap to enter —</div>
 </div>
 <div class="app">
-  <div class="pan on" id="p-home" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="pan on" id="p-home" style="flex-direction:column;overflow:hidden;">
     <div class="hero" id="heroArea" onclick="onTap()">
       <video id="videoA" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:1;cursor:pointer;" onclick="onTap()"></video>
       <video id="videoB" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(.85) saturate(1.1);z-index:2;opacity:0;cursor:pointer;" onclick="onTap()"></video>
