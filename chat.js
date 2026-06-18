@@ -6,9 +6,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { messages } = req.body;
+  const { messages, max_tokens } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+
+  // リクエストでmax_tokensが指定されていればそれを使う（上限1500にクランプ）、なければ200
+  const safeMaxTokens = Math.min(Math.max(parseInt(max_tokens) || 200, 1), 1500);
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -19,7 +22,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 200,
+        max_tokens: safeMaxTokens,
         temperature: 0.85,
         messages
       })

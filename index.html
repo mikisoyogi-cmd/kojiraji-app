@@ -600,7 +600,7 @@ html,body{height:100%;height:var(--app-height,100%);background:#060a14;color:var
   </div>
   <div class="talk-log" id="talkLog"></div>
   <div class="talk-input-row">
-    <textarea class="talk-input" id="talkInput" rows="1" placeholder="話したいことを入力..." maxlength="500" autocomplete="off" autocorrect="off"></textarea>
+    <textarea class="talk-input" id="talkInput" rows="1" placeholder="話したいことを入力..." autocomplete="off" autocorrect="off"></textarea>
     <button class="talk-send" onclick="sendTalkMsg()">→</button>
   </div>
 </div>
@@ -1709,7 +1709,8 @@ function closeTalkRoom() {
 }
 
 function buildTalkMessages(userMsg) {
-  var msgs = [{role: "system", content: SP}];
+  var talkNote = "ここはトークルーム。ホーム画面の軽い会話とは違い、腰を据えて話せる場所なので、考察や思い出話を交えた長めの返答も歓迎。文字数や行数を気にせず、3層構造（共感→考察→余白）をしっかり展開してよい。";
+  var msgs = [{role: "system", content: SP + "\\n\\n" + talkNote}];
   var log = getTalkLog().slice(-TALK_CONTEXT_N);
   log.forEach(function(m) {
     msgs.push({role: m.role === "user" ? "user" : "assistant", content: m.text});
@@ -1746,7 +1747,7 @@ function sendTalkMsg() {
   fetch("/api/chat", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ messages: buildTalkMessages(msg) })
+    body: JSON.stringify({ messages: buildTalkMessages(msg), max_tokens: 1200 })
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
